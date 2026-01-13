@@ -78,7 +78,7 @@ const ROOMS = [
     name: 'Grand War Room', 
     thName: 'ห้องประชุมใหญ่',
     capacity: '25', 
-    image: 'https://i.postimg.cc/Vs9gWN1Q/IMG-7122.jpg', // Updated Image
+    image: 'https://i.postimg.cc/Vs9gWN1Q/IMG-7122.jpg', 
     color: 'bg-emerald-600', 
     icon: '🏢' 
   },
@@ -87,7 +87,7 @@ const ROOMS = [
     name: 'Focus Room', 
     thName: 'ห้องประชุมเล็ก',
     capacity: '10', 
-    image: 'https://i.postimg.cc/c18yxwQ6/IMG-7150.jpg', // Updated Image
+    image: 'https://i.postimg.cc/c18yxwQ6/IMG-7150.jpg', 
     color: 'bg-teal-500', 
     icon: '💡' 
   }
@@ -191,7 +191,8 @@ const getDisplayName = (name) => {
 
 // --- Custom Components ---
 
-const GlassTimePicker = ({ value, onChange, onClose, title, blockedCheck }) => {
+// iOS-Style Glass Time Picker (Updated with minTime support)
+const GlassTimePicker = ({ value, onChange, onClose, title, blockedCheck, minTime }) => {
   const safeValue = value || '09:00';
   const [hour, setHour] = useState(safeValue.split(':')[0].padStart(2, '0'));
   const [minute, setMinute] = useState(safeValue.split(':')[1].padStart(2, '0'));
@@ -219,6 +220,7 @@ const GlassTimePicker = ({ value, onChange, onClose, title, blockedCheck }) => {
 
   const handleSave = () => {
     if (blockedCheck && blockedCheck(`${hour}:${minute}`)) {
+        return; // Blocked logic
     }
     onChange(`${hour}:${minute}`);
     onClose();
@@ -235,20 +237,37 @@ const GlassTimePicker = ({ value, onChange, onClose, title, blockedCheck }) => {
         </div>
         <div className="flex justify-center gap-4 h-48 relative">
           <div className="absolute top-1/2 -translate-y-1/2 w-full h-12 bg-white/10 rounded-xl pointer-events-none border border-white/10" />
+          
           <div ref={hourRef} className="w-20 overflow-y-scroll no-scrollbar py-[calc(6rem-1.5rem)] snap-y snap-mandatory text-center">
             {hours.map(h => {
-                const isBlocked = blockedCheck ? (blockedCheck(`${h}:00`) && blockedCheck(`${h}:30`)) : false; 
+                let isBlocked = false;
+                if (minTime) {
+                    if (parseInt(h) < parseInt(minTime.split(':')[0])) isBlocked = true;
+                }
+                if (blockedCheck && !isBlocked) {
+                   // Check samples in hour
+                   isBlocked = blockedCheck(`${h}:00`) && blockedCheck(`${h}:30`);
+                }
+                
                 return (
-                  <div key={h} onClick={() => setHour(h)} className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-200 ${hour === h ? 'text-white text-2xl font-bold' : isBlocked ? 'text-white/10 decoration-slice line-through' : 'text-white/30 text-lg'}`}>{h}</div>
+                  <div key={h} onClick={() => !isBlocked && setHour(h)} className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-200 ${hour === h ? 'text-white text-2xl font-bold' : isBlocked ? 'text-white/10 decoration-slice line-through' : 'text-white/30 text-lg'}`}>{h}</div>
                 );
             })}
           </div>
           <div className="flex items-center text-white pb-1 font-bold text-xl">:</div>
           <div ref={minuteRef} className="w-20 overflow-y-scroll no-scrollbar py-[calc(6rem-1.5rem)] snap-y snap-mandatory text-center">
             {minutes.map(m => {
-                 const isBlocked = blockedCheck ? blockedCheck(`${hour}:${m}`) : false;
+                 let isBlocked = false;
+                 if (minTime) {
+                     if (parseInt(hour) < parseInt(minTime.split(':')[0])) isBlocked = true;
+                     else if (parseInt(hour) === parseInt(minTime.split(':')[0]) && parseInt(m) <= parseInt(minTime.split(':')[1])) isBlocked = true;
+                 }
+                 if (!isBlocked && blockedCheck) {
+                     isBlocked = blockedCheck(`${hour}:${m}`);
+                 }
+
                  return (
-                  <div key={m} onClick={() => !isBlocked && setMinute(m)} className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-200 ${minute === m ? 'text-white text-2xl font-bold' : isBlocked ? 'text-red-500/50 cursor-not-allowed' : 'text-white/30 text-lg'}`}>{m}</div>
+                  <div key={m} onClick={() => !isBlocked && setMinute(m)} className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-200 ${minute === m ? 'text-white text-2xl font-bold' : isBlocked ? 'text-red-500/50 cursor-not-allowed decoration-slice line-through' : 'text-white/30 text-lg'}`}>{m}</div>
                  );
             })}
           </div>
@@ -258,10 +277,12 @@ const GlassTimePicker = ({ value, onChange, onClose, title, blockedCheck }) => {
   );
 };
 
-// Glass Duration Picker Component
+// Glass Duration Picker Component (Fixed)
 const GlassDurationPicker = ({ value, onChange, onClose }) => {
-  const initH = Math.floor(parseInt(value) / 60);
-  const initM = parseInt(value) % 60;
+  // Value is string minutes
+  const initVal = parseInt(value) || 60;
+  const initH = Math.floor(initVal / 60);
+  const initM = initVal % 60;
   
   const [hour, setHour] = useState(initH);
   const [minute, setMinute] = useState(initM);
@@ -286,7 +307,7 @@ const GlassDurationPicker = ({ value, onChange, onClose }) => {
 
   const handleSave = () => {
     const totalMinutes = (hour * 60) + minute;
-    const finalMinutes = totalMinutes === 0 ? 5 : totalMinutes; 
+    const finalMinutes = totalMinutes === 0 ? 5 : totalMinutes; // Min 5 mins
     onChange(finalMinutes.toString());
     onClose();
   };
@@ -623,6 +644,14 @@ export default function App() {
     setView('booking');
   };
 
+  const checkOverlap = (startTs, endTs) => {
+      return bookings.some(b => {
+          if (editingBookingId && b.id === editingBookingId) return false;
+          if (b.roomId !== selectedRoom.id) return false;
+          return (startTs < b.end && endTs > b.start);
+      });
+  }
+
   const handleSaveBooking = async () => {
     if (!department) return showNotif('error', 'กรุณาระบุแผนก');
     if (!bookerName) return showNotif('error', 'กรุณาระบุชื่อผู้จอง');
@@ -642,13 +671,7 @@ export default function App() {
         return showNotif('error', 'เวลาสิ้นสุดต้องไม่เป็นอดีต');
     }
     
-    const isOverlap = bookings.some(b => {
-      if (editingBookingId && b.id === editingBookingId) return false;
-      if (b.roomId !== selectedRoom.id) return false;
-      return (startTs < b.end && endTs > b.start);
-    });
-
-    if (isOverlap) return showNotif('error', 'ช่วงเวลานี้มีการจองแล้ว');
+    if (checkOverlap(startTs, endTs)) return showNotif('error', 'ช่วงเวลานี้มีการจองแล้ว');
 
     const bookingData = {
       roomId: selectedRoom.id,
@@ -745,6 +768,14 @@ export default function App() {
 
   const handleTimeChange = (newTime) => {
     if (pickerMode === 'start') {
+        // Prevent selecting overlapping time for start
+        const sTs = new Date(`${bookingDate}T${newTime}`).getTime();
+        
+        if (isTimeBlocked(newTime, bookingDate, selectedRoom.id, bookings, editingBookingId, isBookingStarted)) {
+             showNotif('error', 'เวลานี้มีการจองแล้ว');
+             return;
+        }
+
         setStartTime(newTime);
         if (endTimeMode === 'duration') {
             const [h, m] = newTime.split(':').map(Number);
@@ -752,26 +783,55 @@ export default function App() {
             const endMins = startMins + parseInt(duration);
             const endH = Math.floor(endMins / 60) % 24;
             const endM = endMins % 60;
-            setEndTime(`${endH.toString().padStart(2,'0')}:${endM.toString().padStart(2,'0')}`);
+            const newEndTime = `${endH.toString().padStart(2,'0')}:${endM.toString().padStart(2,'0')}`;
+            
+             const eTs = new Date(`${bookingDate}T${newEndTime}`).getTime();
+             if (checkOverlap(sTs, eTs)) {
+                  showNotif('error', 'ช่วงเวลาใหม่ชนกับคิวอื่น');
+             }
+            setEndTime(newEndTime);
         } else if (newTime >= endTime) {
              const [h, m] = newTime.split(':').map(Number);
              const nextH = (h + 1).toString().padStart(2, '0');
              setEndTime(`${nextH}:${m.toString().padStart(2, '0')}`);
         }
     } else if (pickerMode === 'end') {
+        const sTs = new Date(`${bookingDate}T${startTime}`).getTime();
+        const eTs = new Date(`${bookingDate}T${newTime}`).getTime();
+        
+        // Prevent selecting end time before start time
+        if (eTs <= sTs) {
+             showNotif('error', 'เวลาสิ้นสุดต้องหลังเวลาเริ่ม');
+             return;
+        }
+
+        if (checkOverlap(sTs, eTs)) {
+            showNotif('error', 'ช่วงเวลานี้ชนกับคิวอื่น');
+            return;
+        }
         setEndTime(newTime);
     }
   };
   
   const handleDurationPickerChange = (totalMinsStr) => {
-      setDuration(totalMinsStr);
-      // Recalc End Time logic
+      const newDur = totalMinsStr;
       const [h, m] = startTime.split(':').map(Number);
       const startMins = h * 60 + m;
-      const endMins = startMins + parseInt(totalMinsStr);
+      const endMins = startMins + parseInt(newDur);
       const endH = Math.floor(endMins / 60) % 24;
       const endM = endMins % 60;
-      setEndTime(`${endH.toString().padStart(2,'0')}:${endM.toString().padStart(2,'0')}`);
+      const newEndTime = `${endH.toString().padStart(2,'0')}:${endM.toString().padStart(2,'0')}`;
+
+      const sTs = new Date(`${bookingDate}T${startTime}`).getTime();
+      const eTs = new Date(`${bookingDate}T${newEndTime}`).getTime();
+
+      if (checkOverlap(sTs, eTs)) {
+          showNotif('error', 'ระยะเวลาที่เลือกชนกับคิวอื่น');
+          return;
+      }
+
+      setDuration(newDur);
+      setEndTime(newEndTime);
   };
 
   const handleEndTimeModeToggle = (mode) => {
@@ -787,39 +847,39 @@ export default function App() {
   const renderMainMenuOverlay = () => (
       <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex flex-col animate-in fade-in duration-200" style={{fontFamily: "-apple-system, BlinkMacSystemFont, 'Sukhumvit Set', sans-serif"}}>
           <div className="flex-1" onClick={() => setShowMainMenu(false)} />
-          <div className="bg-gray-900/90 backdrop-blur-2xl border-t border-white/10 rounded-t-[2.5rem] p-6 pb-12 shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
-              <div className="flex justify-center mb-6">
+          <div className="bg-gray-900/80 backdrop-blur-3xl border-t border-white/20 rounded-t-[2.5rem] p-6 pb-12 shadow-[0_-20px_60px_rgba(0,0,0,0.7)] animate-in slide-in-from-bottom-10 duration-300 ring-1 ring-white/10">
+              <div className="flex justify-center mb-8">
                   <div className="w-12 h-1.5 bg-white/20 rounded-full" />
               </div>
               <div className="space-y-4">
-                  <button onClick={() => { setAuthAction('viewLogs'); setShowAuthModal(true); }} className="w-full p-4 bg-gradient-to-br from-white/10 to-white/5 hover:from-blue-900/40 hover:to-blue-800/20 rounded-2xl flex items-center gap-4 border border-white/10 shadow-lg active:scale-[0.98] transition-all duration-200 group relative overflow-hidden">
-                      <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/10 transition-colors duration-300" />
-                      <div className="p-3.5 bg-blue-500/20 text-blue-400 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-all shadow-inner relative z-10">
-                          <FileText size={24} />
+                  <button onClick={() => { setAuthAction('viewLogs'); setShowAuthModal(true); }} className="w-full p-5 bg-gradient-to-br from-white/10 to-white/5 hover:from-blue-600/30 hover:to-blue-900/10 rounded-3xl flex items-center gap-5 border border-white/10 shadow-lg active:scale-[0.98] transition-all duration-300 group relative overflow-hidden">
+                      <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/5 transition-colors duration-500" />
+                      <div className="p-4 bg-blue-500/20 text-blue-400 rounded-2xl group-hover:bg-blue-500 group-hover:text-white transition-all shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] relative z-10">
+                          <FileText size={26} />
                       </div>
                       <div className="text-left relative z-10">
-                          <span className="block text-white font-bold text-lg tracking-tight group-hover:text-blue-100 transition-colors">Activity Log</span>
-                          <span className="text-white/40 text-sm group-hover:text-blue-200/60 transition-colors">ดูประวัติการแก้ไขระบบ</span>
+                          <span className="block text-white font-bold text-xl tracking-tight group-hover:text-blue-100 transition-colors mb-0.5">Activity Log</span>
+                          <span className="text-white/40 text-sm font-medium group-hover:text-blue-200/60 transition-colors">ประวัติการแก้ไขระบบ</span>
                       </div>
                       <div className="ml-auto p-2 rounded-full bg-white/5 group-hover:bg-blue-500/20 text-white/20 group-hover:text-blue-300 transition-all relative z-10">
                           <ChevronRight size={20} className="w-5 h-5" />
                       </div>
                   </button>
-                  <button onClick={() => { setView('history'); setShowMainMenu(false); }} className="w-full p-4 bg-gradient-to-br from-white/10 to-white/5 hover:from-purple-900/40 hover:to-purple-800/20 rounded-2xl flex items-center gap-4 border border-white/10 shadow-lg active:scale-[0.98] transition-all duration-200 group relative overflow-hidden">
-                      <div className="absolute inset-0 bg-purple-500/0 group-hover:bg-purple-500/10 transition-colors duration-300" />
-                      <div className="p-3.5 bg-purple-500/20 text-purple-400 rounded-xl group-hover:bg-purple-500 group-hover:text-white transition-all shadow-inner relative z-10">
-                          <History size={24} />
+                  <button onClick={() => { setView('history'); setShowMainMenu(false); }} className="w-full p-5 bg-gradient-to-br from-white/10 to-white/5 hover:from-purple-600/30 hover:to-purple-900/10 rounded-3xl flex items-center gap-5 border border-white/10 shadow-lg active:scale-[0.98] transition-all duration-300 group relative overflow-hidden">
+                      <div className="absolute inset-0 bg-purple-500/0 group-hover:bg-purple-500/5 transition-colors duration-500" />
+                      <div className="p-4 bg-purple-500/20 text-purple-400 rounded-2xl group-hover:bg-purple-500 group-hover:text-white transition-all shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] relative z-10">
+                          <History size={26} />
                       </div>
                       <div className="text-left relative z-10">
-                          <span className="block text-white font-bold text-lg tracking-tight group-hover:text-purple-100 transition-colors">Booking History</span>
-                          <span className="text-white/40 text-sm group-hover:text-purple-200/60 transition-colors">รายงานการใช้งานย้อนหลัง</span>
+                          <span className="block text-white font-bold text-xl tracking-tight group-hover:text-purple-100 transition-colors mb-0.5">Booking History</span>
+                          <span className="text-white/40 text-sm font-medium group-hover:text-purple-200/60 transition-colors">ประวัติการจองย้อนหลัง</span>
                       </div>
                       <div className="ml-auto p-2 rounded-full bg-white/5 group-hover:bg-purple-500/20 text-white/20 group-hover:text-purple-300 transition-all relative z-10">
                           <ChevronRight size={20} className="w-5 h-5" />
                       </div>
                   </button>
               </div>
-              <button onClick={() => setShowMainMenu(false)} className="w-full mt-6 py-4 text-white/40 font-bold hover:text-white transition-colors">Close Menu</button>
+              <button onClick={() => setShowMainMenu(false)} className="w-full mt-8 py-4 text-white/40 font-bold hover:text-white transition-colors text-base tracking-wide">Close Menu</button>
           </div>
       </div>
   );
@@ -1240,6 +1300,7 @@ export default function App() {
                 onClose={() => setPickerMode(null)}
                 title={pickerMode === 'start' ? 'Start Time' : 'End Time'}
                 blockedCheck={pickerMode === 'start' ? (t) => isTimeBlocked(t, bookingDate, selectedRoom.id, bookings, editingBookingId, isBookingStarted) : null}
+                minTime={pickerMode === 'start' && !isBookingStarted && bookingDate === getLocalDateStr() ? new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : (pickerMode === 'end' ? startTime : null)}
             />
         )}
       </div>
