@@ -75,16 +75,16 @@ try {
 const ROOMS = [
   { 
     id: 'big', 
-    name: 'Grand War Room', // Changed Name
+    name: 'Grand War Room', 
     thName: 'ห้องประชุมใหญ่',
-    capacity: '30', 
+    capacity: '25', 
     image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80',
     color: 'bg-emerald-600', 
     icon: '🏢' 
   },
   { 
     id: 'small', 
-    name: 'Focus Room', // Changed Name
+    name: 'Focus Room', 
     thName: 'ห้องประชุมเล็ก',
     capacity: '10', 
     image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=800&q=80',
@@ -145,7 +145,6 @@ const getStatus = (roomId, bookings) => {
   if (nextBooking) {
       const diffMins = (nextBooking.start - now) / (1000 * 60);
       
-      // UPCOMING SOON LOGIC (< 10 mins)
       if (diffMins <= 10) {
           return {
               status: 'soon',
@@ -279,18 +278,18 @@ const RoomCardBento = ({ room, bookings, onSelect }) => {
   let statusColor = 'bg-emerald-400';
   let badgeStyle = 'bg-black/20 border-white/10 text-white';
   let badgeLayout = 'px-4 py-2 rounded-full w-auto';
-  let cardOverlay = 'bg-black/20'; // Default overlay
+  let cardOverlay = 'bg-black/20'; 
 
   if (status === 'busy') {
       statusColor = 'bg-rose-500';
       badgeStyle = 'bg-rose-600/80 border-rose-500/50 text-white shadow-rose-900/50 shadow-lg backdrop-blur-md';
-      badgeLayout = 'px-6 py-3 rounded-2xl w-full justify-center'; // Full width for busy
-      cardOverlay = 'bg-rose-900/30 mix-blend-multiply'; // Red tint overlay
+      badgeLayout = 'px-6 py-3 rounded-2xl w-full justify-center'; 
+      cardOverlay = 'bg-rose-900/30 mix-blend-multiply'; 
   } else if (status === 'soon') {
       statusColor = 'bg-amber-400';
       badgeStyle = 'bg-amber-500/80 border-amber-400/50 text-white shadow-amber-900/50 shadow-lg backdrop-blur-md';
-      badgeLayout = 'px-6 py-3 rounded-2xl w-full justify-center'; // Full width for soon
-      cardOverlay = 'bg-amber-900/30 mix-blend-multiply'; // Amber tint overlay
+      badgeLayout = 'px-6 py-3 rounded-2xl w-full justify-center'; 
+      cardOverlay = 'bg-amber-900/30 mix-blend-multiply'; 
   }
 
   const upcomingBookings = bookings
@@ -303,7 +302,6 @@ const RoomCardBento = ({ room, bookings, onSelect }) => {
       <div className="absolute inset-0">
           <img src={room.image} alt={room.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
           <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/90 via-emerald-900/40 to-emerald-900/10 mix-blend-multiply" />
-          {/* Dynamic Status Overlay */}
           <div className={`absolute inset-0 ${cardOverlay} transition-colors duration-500`} /> 
       </div>
       <div className="relative h-full flex flex-col justify-between p-6">
@@ -507,7 +505,6 @@ export default function App() {
       const startObj = new Date(booking.start);
       const endObj = new Date(booking.end);
       
-      // CHECK IF STARTED
       const hasStarted = now.getTime() > startObj.getTime();
       setIsBookingStarted(hasStarted);
 
@@ -557,11 +554,9 @@ export default function App() {
     
     const now = new Date().getTime();
 
-    // LOGIC: Prevent past booking ONLY if it's not an started active booking
     if (!isBookingStarted && startTs < now) {
         return showNotif('error', 'ไม่สามารถจองเวลาย้อนหลังได้');
     }
-    // If started, ensure End Time is not in past
     if (isBookingStarted && endTs < now) {
         return showNotif('error', 'เวลาสิ้นสุดต้องไม่เป็นอดีต');
     }
@@ -623,7 +618,7 @@ export default function App() {
             setView('logs');
             setShowMainMenu(false);
             setShowAuthModal(false);
-            setBookerName(''); // Clear security
+            setBookerName(''); 
         } else {
             showNotif('error', 'Access Denied: Incorrect Code');
         }
@@ -992,7 +987,9 @@ export default function App() {
                 </div>
                 <div className="flex gap-4 items-start">
                     <div className="flex-1">
-                        <label className="text-xs text-emerald-400 font-bold mb-3 block uppercase tracking-widest drop-shadow-sm">Start</label>
+                        <div className="flex justify-between items-center mb-3 h-7">
+                            <label className="text-xs text-emerald-400 font-bold uppercase tracking-widest drop-shadow-sm">Start</label>
+                        </div>
                         <button 
                             disabled={isBookingStarted}
                             onClick={() => !isBookingStarted && setPickerMode('start')}
@@ -1002,16 +999,18 @@ export default function App() {
                             {startTime}
                         </button>
                     </div>
-                    <ArrowRight size={20} className="text-white/20 mt-10"/>
+                    <div className="flex flex-col justify-center h-full pt-9">
+                        <ArrowRight size={20} className="text-white/20" />
+                    </div>
                     <div className="flex-1 flex flex-col">
-                        <div className="flex justify-between items-center mb-3">
+                        <div className="flex justify-between items-center mb-3 h-7">
                              <label className="text-xs text-emerald-400 font-bold uppercase tracking-widest drop-shadow-sm">End</label>
-                             <div className="flex bg-black/30 rounded-lg p-0.5 border border-white/10">
-                                 <button onClick={() => handleEndTimeModeToggle('specific')} className={`p-1 rounded-md transition-all ${endTimeMode === 'specific' ? 'bg-emerald-500 text-black' : 'text-white/30 hover:text-white'}`}>
-                                     <Clock size={12} />
+                             <div className="flex bg-white/10 rounded-lg p-0.5 border border-white/10 backdrop-blur-md shadow-inner">
+                                 <button onClick={() => handleEndTimeModeToggle('specific')} className={`p-1.5 rounded-md transition-all ${endTimeMode === 'specific' ? 'bg-emerald-500 text-black shadow-sm' : 'text-white/40 hover:text-white'}`}>
+                                     <Clock size={14} />
                                  </button>
-                                 <button onClick={() => handleEndTimeModeToggle('duration')} className={`p-1 rounded-md transition-all ${endTimeMode === 'duration' ? 'bg-emerald-500 text-black' : 'text-white/30 hover:text-white'}`}>
-                                     <Timer size={12} />
+                                 <button onClick={() => handleEndTimeModeToggle('duration')} className={`p-1.5 rounded-md transition-all ${endTimeMode === 'duration' ? 'bg-emerald-500 text-black shadow-sm' : 'text-white/40 hover:text-white'}`}>
+                                     <Timer size={14} />
                                  </button>
                              </div>
                         </div>
