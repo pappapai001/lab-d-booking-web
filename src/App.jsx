@@ -251,6 +251,92 @@ const GlassTimePicker = ({ value, onChange, onClose, title, blockedCheck }) => {
   );
 };
 
+// New: Glass Duration Picker Component
+const GlassDurationPicker = ({ value, onChange, onClose }) => {
+  // Value is in minutes (e.g. 90)
+  // Convert to Hours and Minutes
+  const initH = Math.floor(parseInt(value) / 60);
+  const initM = parseInt(value) % 60;
+  
+  const [hour, setHour] = useState(initH);
+  const [minute, setMinute] = useState(initM);
+  
+  const hourRef = useRef(null);
+  const minuteRef = useRef(null);
+
+  // Range 0-8 Hours
+  const hours = Array.from({ length: 9 }, (_, i) => i);
+  // Range 0-59 Minutes
+  const minutes = Array.from({ length: 60 }, (_, i) => i);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+        if (hourRef.current) {
+            hourRef.current.scrollTop = hour * 48;
+        }
+        if (minuteRef.current) {
+            minuteRef.current.scrollTop = minute * 48;
+        }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleSave = () => {
+    // Return total minutes
+    const totalMinutes = (hour * 60) + minute;
+    // Don't allow 0 minutes
+    const finalMinutes = totalMinutes === 0 ? 5 : totalMinutes; // Min 5 mins
+    onChange(finalMinutes.toString());
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-md bg-gray-900/80 backdrop-blur-2xl border-t border-white/10 rounded-t-[2.5rem] p-6 shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
+        
+        <div className="flex justify-between items-center mb-6">
+          <button onClick={onClose} className="text-white/50 hover:text-white transition-colors">Cancel</button>
+          <h3 className="text-white font-bold text-lg">Select Duration</h3>
+          <button onClick={handleSave} className="text-emerald-400 font-bold hover:text-emerald-300 transition-colors">Done</button>
+        </div>
+
+        <div className="flex justify-center gap-4 h-48 relative">
+          <div className="absolute top-1/2 -translate-y-1/2 w-full h-12 bg-white/10 rounded-xl pointer-events-none border border-white/10" />
+
+          {/* Hours Column */}
+          <div ref={hourRef} className="w-24 overflow-y-scroll no-scrollbar py-[calc(6rem-1.5rem)] snap-y snap-mandatory text-center">
+            {hours.map(h => (
+              <div 
+                key={h} 
+                onClick={() => setHour(h)}
+                className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-200 ${hour === h ? 'text-white text-2xl font-bold' : 'text-white/30 text-lg'}`}
+              >
+                {h} <span className="text-sm ml-1 font-normal opacity-50">ชม.</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center text-white pb-1 font-bold text-xl">:</div>
+
+          {/* Minutes Column */}
+          <div ref={minuteRef} className="w-24 overflow-y-scroll no-scrollbar py-[calc(6rem-1.5rem)] snap-y snap-mandatory text-center">
+            {minutes.map(m => (
+              <div 
+                key={m} 
+                onClick={() => setMinute(m)}
+                className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-200 ${minute === m ? 'text-white text-2xl font-bold' : 'text-white/30 text-lg'}`}
+              >
+                {m} <span className="text-sm ml-1 font-normal opacity-50">นาที</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Header = ({ title, onBack, onMenuClick }) => (
   <div className="flex items-center justify-between px-6 pt-12 pb-4 z-20">
     <div className="flex items-center gap-3">
@@ -618,7 +704,7 @@ export default function App() {
             setView('logs');
             setShowMainMenu(false);
             setShowAuthModal(false);
-            setBookerName(''); 
+            setBookerName(''); // Clear security
         } else {
             showNotif('error', 'Access Denied: Incorrect Code');
         }
@@ -682,12 +768,12 @@ export default function App() {
     }
   };
   
-  const handleDurationChange = (e) => {
-      const dur = e.target.value;
-      setDuration(dur);
+  const handleDurationPickerChange = (totalMinsStr) => {
+      setDuration(totalMinsStr);
+      // Recalc End Time logic
       const [h, m] = startTime.split(':').map(Number);
       const startMins = h * 60 + m;
-      const endMins = startMins + parseInt(dur);
+      const endMins = startMins + parseInt(totalMins);
       const endH = Math.floor(endMins / 60) % 24;
       const endM = endMins % 60;
       setEndTime(`${endH.toString().padStart(2,'0')}:${endM.toString().padStart(2,'0')}`);
@@ -696,7 +782,7 @@ export default function App() {
   const handleEndTimeModeToggle = (mode) => {
       setEndTimeMode(mode);
       if (mode === 'duration') {
-          handleDurationChange({target: {value: duration}});
+          handleDurationPickerChange(duration); // Recalc immediately
       }
   };
 
@@ -787,18 +873,27 @@ export default function App() {
                     <div className="text-center text-white/30 py-10">ยังไม่มีประวัติการจองที่ผ่านมา</div>
                 ) : (
                     pastBookings.map((b) => (
-                        <div key={b.id} className="bg-white/5 border border-white/10 p-4 rounded-2xl flex justify-between items-center opacity-80 hover:opacity-100 transition-opacity">
-                            <div>
-                                <div className="text-emerald-300 font-bold text-sm mb-1">
+                        <div key={b.id} className="bg-white/5 border border-white/10 p-4 rounded-2xl flex flex-col gap-2 opacity-80 hover:opacity-100 transition-opacity">
+                            <div className="flex justify-between items-center border-b border-white/5 pb-2 mb-1">
+                                <div className="text-emerald-300 font-bold text-sm">
                                     {new Date(b.start).toLocaleDateString()}
                                 </div>
-                                <div className="text-white font-semibold text-base">{b.title}</div>
-                                <div className="text-xs text-white/50 mt-1 flex items-center gap-2">
-                                    <span>{formatTime(b.start)} - {formatTime(b.end)}</span>
-                                    <span>•</span>
-                                    <span>{b.roomId === 'big' ? 'ห้องใหญ่' : 'ห้องเล็ก'}</span>
+                                <span className="text-xs text-white/30">{b.roomId === 'big' ? 'Grand Room' : 'Focus Room'}</span>
+                            </div>
+                            
+                            <div>
+                                <div className="text-white font-bold text-lg leading-tight">{b.title}</div>
+                                {b.description && <div className="text-xs text-white/50 mt-1 line-clamp-1 italic">"{b.description}"</div>}
+                            </div>
+                            
+                            <div className="flex justify-between items-end mt-2">
+                                <div className="text-xs text-emerald-200/60 flex items-center gap-1">
+                                    <Clock size={12} /> {formatTime(b.start)} - {formatTime(b.end)}
                                 </div>
-                                <div className="text-xs text-white/40 mt-1">โดย: {getDisplayName(b.ownerId)} ({b.owner})</div>
+                                <div className="text-right">
+                                    <div className="text-xs font-bold text-white">{getDisplayName(b.ownerId)}</div>
+                                    <div className="text-[10px] text-white/40">{b.owner}</div>
+                                </div>
                             </div>
                         </div>
                     ))
@@ -1022,19 +1117,12 @@ export default function App() {
                                 {endTime}
                             </button>
                         ) : (
-                            <select 
-                                value={duration}
-                                onChange={handleDurationChange}
-                                className="w-full bg-black/20 border border-white/10 p-4 rounded-2xl font-bold text-center text-lg outline-none focus:bg-black/40 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all text-white appearance-none"
+                            <button 
+                                onClick={() => setPickerMode('duration')}
+                                className="w-full bg-black/20 border border-white/10 p-4 rounded-2xl font-bold text-center text-lg outline-none focus:bg-black/40 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all text-white hover:bg-black/30"
                             >
-                                <option value="30">30 Mins</option>
-                                <option value="60">1 Hour</option>
-                                <option value="90">1.5 Hours</option>
-                                <option value="120">2 Hours</option>
-                                <option value="180">3 Hours</option>
-                                <option value="240">4 Hours</option>
-                                <option value="480">8 Hours</option>
-                            </select>
+                                {Math.floor(parseInt(duration) / 60)} ชม. {parseInt(duration) % 60} นาที
+                            </button>
                         )}
                         {endTimeMode === 'duration' && (
                              <div className="text-center text-[10px] text-white/30 mt-2 font-medium">Until {endTime}</div>
@@ -1126,7 +1214,13 @@ export default function App() {
         {showAuthModal && renderAuthModal()}
         {notification && renderNotification()}
         
-        {pickerMode && (
+        {pickerMode === 'duration' ? (
+             <GlassDurationPicker 
+                value={duration}
+                onChange={handleDurationPickerChange}
+                onClose={() => setPickerMode(null)}
+             />
+        ) : pickerMode && (
             <GlassTimePicker 
                 value={pickerMode === 'start' ? startTime : endTime}
                 onChange={handleTimeChange}
