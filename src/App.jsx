@@ -61,7 +61,7 @@ const ROOMS = [
     id: 'big', 
     name: 'Grand Conference', 
     thName: 'ห้องประชุมใหญ่',
-    capacity: '20', 
+    capacity: '30', 
     image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80',
     color: 'bg-emerald-600', 
     icon: '🏢' 
@@ -70,7 +70,7 @@ const ROOMS = [
     id: 'small', 
     name: 'Focus Studio', 
     thName: 'ห้องประชุมเล็ก',
-    capacity: '6', 
+    capacity: '10', 
     image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=800&q=80',
     color: 'bg-teal-500', 
     icon: '💡' 
