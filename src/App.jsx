@@ -27,7 +27,8 @@ import {
   LayoutGrid,
   MapPin,
   Unlock,
-  Loader2
+  Loader2,
+  AlignLeft // Added Icon for Description
 } from 'lucide-react';
 
 // --- Firebase Setup ---
@@ -41,14 +42,10 @@ const manualConfig = {
   measurementId: "G-JMF3CFS1DY"
 };
 
-// Config & App ID Fix
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : manualConfig;
-
-// FIX: Sanitize appId to ensure no slashes (prevents Firestore path errors)
 const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'lab-d-meeting-app';
 const appId = rawAppId.replace(/\//g, '_').replace(/\./g, '-');
 
-// Initialize Firebase
 let auth, db;
 try {
   const app = initializeApp(firebaseConfig);
@@ -104,7 +101,7 @@ const formatDateShort = (timestamp) => {
 
 const getStatus = (roomId, bookings) => {
   const now = new Date().getTime();
-  const safeBookings = Array.isArray(bookings) ? bookings : []; // Safety check
+  const safeBookings = Array.isArray(bookings) ? bookings : [];
   
   const currentBooking = safeBookings.find(b => 
     b.roomId === roomId && 
@@ -127,7 +124,7 @@ const getStatus = (roomId, bookings) => {
   return { status: 'free', text: 'AVAILABLE', color: 'bg-emerald-500/90 text-white', detail: 'Available' };
 };
 
-// --- Components (External to prevent focus loss) ---
+// --- Components ---
 
 const Header = ({ title, onBack }) => (
   <div className="flex items-center justify-between px-6 pt-12 pb-4 z-20">
@@ -262,12 +259,27 @@ export default function App() {
   const [bookingTitle, setBookingTitle] = useState('');
   const [department, setDepartment] = useState(''); 
   const [bookerName, setBookerName] = useState('');
+  const [description, setDescription] = useState(''); // NEW: Description State
   
   // UI States
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authAction, setAuthAction] = useState('create');
   const [pendingBookingData, setPendingBookingData] = useState(null);
   const [notification, setNotification] = useState(null);
+
+  // --- Initialize Deep Linking Logic ---
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get('room');
+    if (roomParam) {
+      const targetRoom = ROOMS.find(r => r.id === roomParam);
+      if (targetRoom) {
+        setSelectedRoom(targetRoom);
+        setView('menu');
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, []);
 
   // --- Firebase Logic ---
   useEffect(() => {
@@ -290,7 +302,6 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
 
-    // Use sanitized appId
     const q = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'bookings')
     );
@@ -298,21 +309,20 @@ export default function App() {
     const unsubscribeData = onSnapshot(q, (snapshot) => {
       const loadedBookings = snapshot.docs.map(doc => {
         const data = doc.data();
-        // SANITIZE DATA: Ensure start/end are numbers, convert from Timestamp if needed
         return {
           id: doc.id,
           ...data,
           start: data.start?.toMillis ? data.start.toMillis() : Number(data.start),
           end: data.end?.toMillis ? data.end.toMillis() : Number(data.end),
           owner: String(data.owner || ''),
-          ownerId: String(data.ownerId || '')
+          ownerId: String(data.ownerId || ''),
+          description: String(data.description || '')
         };
       });
       setBookings(loadedBookings);
       setLoading(false);
     }, (error) => {
       console.error("Data fetch error:", error);
-      // Don't show blocking notification for initial connection issues to avoid spam
       setLoading(false);
     });
 
@@ -333,6 +343,7 @@ export default function App() {
       setBookingTitle(booking.title);
       setDepartment(booking.owner || '');
       setBookerName(booking.ownerId || ''); 
+      setDescription(booking.description || ''); // Load Description
       setAuthAction('edit');
     } else {
       setEditingBookingId(null);
@@ -342,6 +353,7 @@ export default function App() {
       setBookingTitle('');
       setDepartment('');
       setBookerName('');
+      setDescription(''); // Clear Description
       setAuthAction('create');
     }
     setView('booking');
@@ -357,6 +369,13 @@ export default function App() {
     const startTs = startDateTime.getTime();
     const endTs = endDateTime.getTime();
     
+    // VALIDATION: Prevent Past Bookings
+    const now = new Date().getTime();
+    if (startTs < now) {
+        return showNotif('error', 'ไม่สามารถจองเวลาย้อนหลังได้');
+    }
+    
+    // Validate Overlap
     const isOverlap = bookings.some(b => {
       if (editingBookingId && b.id === editingBookingId) return false;
       if (b.roomId !== selectedRoom.id) return false;
@@ -371,12 +390,12 @@ export default function App() {
       start: startTs,
       end: endTs,
       owner: department,
-      ownerId: bookerName
+      ownerId: bookerName,
+      description: description // Save Description
     };
 
     try {
       if (editingBookingId) {
-        // Use sanitized appId
         await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', editingBookingId));
         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), bookingData);
         showNotif('success', 'แก้ไขเรียบร้อย');
@@ -425,6 +444,7 @@ export default function App() {
     setBookerName('');
     setBookingTitle('');
     setDepartment('');
+    setDescription('');
     setEditingBookingId(null);
     setPendingBookingData(null);
     setView('dashboard');
@@ -483,6 +503,7 @@ export default function App() {
                     <XCircle size={24} className="text-emerald-100/60 group-hover:text-emerald-50" />
                 </button>
             </div>
+            
             <div className="space-y-4">
                 <button 
                     onClick={() => setView('schedule')} 
@@ -499,6 +520,7 @@ export default function App() {
                     </div>
                     <ArrowRight size={20} className="text-white/30 group-hover:text-white transition-colors group-active:text-emerald-400"/>
                 </button>
+                
                 <button 
                     onClick={() => initBookingForm(false)} 
                     className="w-full p-5 bg-emerald-50 text-emerald-950 rounded-2xl flex items-center justify-between shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-[0.98] active:bg-emerald-400 active:shadow-[0_0_30px_rgba(52,211,153,0.4)] transition-all border border-white/20 group hover:shadow-[0_0_30px_rgba(52,211,153,0.2)]"
@@ -548,6 +570,16 @@ export default function App() {
                  className="w-full text-xl font-bold bg-black/20 border border-white/10 py-4 px-4 rounded-2xl focus:outline-none focus:bg-black/40 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all placeholder:text-white/20 text-white" 
                  value={department} 
                  onChange={(e) => setDepartment(e.target.value)} 
+               />
+           </div>
+           <div>
+               <label className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3 block drop-shadow-sm flex items-center gap-2"><AlignLeft size={14} /> Description (Optional)</label>
+               <textarea 
+                 rows="3"
+                 placeholder="Agenda or details..." 
+                 className="w-full text-lg font-medium bg-black/20 border border-white/10 py-4 px-4 rounded-2xl focus:outline-none focus:bg-black/40 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all placeholder:text-white/20 text-white resize-none" 
+                 value={description} 
+                 onChange={(e) => setDescription(e.target.value)} 
                />
            </div>
         </div>
@@ -618,6 +650,11 @@ export default function App() {
                                                 <span className="mx-1">•</span> 
                                                 <Users size={12}/> {b.ownerId} <span className="text-white/40 font-normal">({b.owner})</span>
                                             </div>
+                                            {b.description && (
+                                                <div className="text-xs text-white/50 mt-2 pl-2 border-l-2 border-emerald-500/30 font-light italic">
+                                                    "{b.description}"
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:text-emerald-400 transition-colors group-active:text-emerald-400 group-active:bg-emerald-400/20">
                                              <Edit2 size={14} />
