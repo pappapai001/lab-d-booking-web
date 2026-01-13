@@ -218,30 +218,41 @@ const GlassTimePicker = ({ value, onChange, onClose, title, blockedCheck }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 backdrop-blur-md animate-in fade-in duration-300">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md bg-gray-900/80 backdrop-blur-2xl border-t border-white/10 rounded-t-[2.5rem] p-6 shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
-        <div className="flex justify-between items-center mb-6">
-          <button onClick={onClose} className="text-white/50 hover:text-white transition-colors">Cancel</button>
-          <h3 className="text-white font-bold text-lg">{title}</h3>
-          <button onClick={handleSave} className="text-emerald-400 font-bold hover:text-emerald-300 transition-colors">Done</button>
+      {/* iOS Glass Modal */}
+      <div className="relative z-10 w-full max-w-md bg-gray-900/60 backdrop-blur-3xl border-t border-white/20 rounded-t-[2.5rem] p-6 pb-10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-10 duration-300 ring-1 ring-white/10">
+        
+        {/* Header Bar */}
+        <div className="flex justify-between items-center mb-8">
+          <button onClick={onClose} className="text-white/60 hover:text-white transition-colors text-base font-medium">Cancel</button>
+          <h3 className="text-white font-semibold text-lg tracking-wide">{title}</h3>
+          <button onClick={handleSave} className="text-emerald-400 font-bold hover:text-emerald-300 transition-colors text-base shadow-emerald-500/20 drop-shadow-sm">Done</button>
         </div>
-        <div className="flex justify-center gap-4 h-48 relative">
-          <div className="absolute top-1/2 -translate-y-1/2 w-full h-12 bg-white/10 rounded-xl pointer-events-none border border-white/10" />
-          <div ref={hourRef} className="w-20 overflow-y-scroll no-scrollbar py-[calc(6rem-1.5rem)] snap-y snap-mandatory text-center">
+
+        {/* Picker Wheels */}
+        <div className="flex justify-center gap-2 h-56 relative perspective-1000">
+          {/* Highlight Bar (The "Lens") */}
+          <div className="absolute top-1/2 -translate-y-1/2 w-full h-12 bg-white/10 rounded-xl pointer-events-none border-y border-white/20 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-[1px]" />
+
+          {/* Hours Column */}
+          <div ref={hourRef} className="w-24 overflow-y-scroll no-scrollbar py-[calc(7rem-1.5rem)] snap-y snap-mandatory text-center mask-gradient-y">
             {hours.map(h => {
                 const isBlocked = blockedCheck ? blockedCheck(`${h}:00`) && blockedCheck(`${h}:30`) : false; 
                 return (
-                  <div key={h} onClick={() => setHour(h)} className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-200 ${hour === h ? 'text-white text-2xl font-bold' : isBlocked ? 'text-white/10 decoration-slice line-through' : 'text-white/30 text-lg'}`}>{h}</div>
+                  <div key={h} onClick={() => setHour(h)} className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-300 ${hour === h ? 'text-white text-3xl font-semibold scale-110' : isBlocked ? 'text-white/10 decoration-slice line-through text-lg' : 'text-white/30 text-xl font-medium'}`}>{h}</div>
                 );
             })}
           </div>
-          <div className="flex items-center text-white pb-1 font-bold text-xl">:</div>
-          <div ref={minuteRef} className="w-20 overflow-y-scroll no-scrollbar py-[calc(6rem-1.5rem)] snap-y snap-mandatory text-center">
+
+          <div className="flex items-center text-white/80 pb-1 font-bold text-xl z-10">:</div>
+
+          {/* Minutes Column */}
+          <div ref={minuteRef} className="w-24 overflow-y-scroll no-scrollbar py-[calc(7rem-1.5rem)] snap-y snap-mandatory text-center mask-gradient-y">
             {minutes.map(m => {
                  const isBlocked = blockedCheck ? blockedCheck(`${hour}:${m}`) : false;
                  return (
-                  <div key={m} onClick={() => !isBlocked && setMinute(m)} className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-200 ${minute === m ? 'text-white text-2xl font-bold' : isBlocked ? 'text-red-500/50 cursor-not-allowed' : 'text-white/30 text-lg'}`}>{m}</div>
+                  <div key={m} onClick={() => !isBlocked && setMinute(m)} className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-300 ${minute === m ? 'text-white text-3xl font-semibold scale-110' : isBlocked ? 'text-red-500/30 cursor-not-allowed text-lg' : 'text-white/30 text-xl font-medium'}`}>{m}</div>
                  );
             })}
           </div>
@@ -251,10 +262,8 @@ const GlassTimePicker = ({ value, onChange, onClose, title, blockedCheck }) => {
   );
 };
 
-// New: Glass Duration Picker Component
+// Glass Duration Picker Component
 const GlassDurationPicker = ({ value, onChange, onClose }) => {
-  // Value is in minutes (e.g. 90)
-  // Convert to Hours and Minutes
   const initH = Math.floor(parseInt(value) / 60);
   const initM = parseInt(value) % 60;
   
@@ -264,9 +273,7 @@ const GlassDurationPicker = ({ value, onChange, onClose }) => {
   const hourRef = useRef(null);
   const minuteRef = useRef(null);
 
-  // Range 0-8 Hours
   const hours = Array.from({ length: 9 }, (_, i) => i);
-  // Range 0-59 Minutes
   const minutes = Array.from({ length: 60 }, (_, i) => i);
 
   useEffect(() => {
@@ -282,10 +289,8 @@ const GlassDurationPicker = ({ value, onChange, onClose }) => {
   }, []);
 
   const handleSave = () => {
-    // Return total minutes
     const totalMinutes = (hour * 60) + minute;
-    // Don't allow 0 minutes
-    const finalMinutes = totalMinutes === 0 ? 5 : totalMinutes; // Min 5 mins
+    const finalMinutes = totalMinutes === 0 ? 5 : totalMinutes; 
     onChange(finalMinutes.toString());
     onClose();
   };
@@ -293,41 +298,39 @@ const GlassDurationPicker = ({ value, onChange, onClose }) => {
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md bg-gray-900/80 backdrop-blur-2xl border-t border-white/10 rounded-t-[2.5rem] p-6 shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
+      <div className="relative z-10 w-full max-w-md bg-gray-900/60 backdrop-blur-3xl border-t border-white/20 rounded-t-[2.5rem] p-6 pb-10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-10 duration-300 ring-1 ring-white/10">
         
-        <div className="flex justify-between items-center mb-6">
-          <button onClick={onClose} className="text-white/50 hover:text-white transition-colors">Cancel</button>
-          <h3 className="text-white font-bold text-lg">Select Duration</h3>
-          <button onClick={handleSave} className="text-emerald-400 font-bold hover:text-emerald-300 transition-colors">Done</button>
+        <div className="flex justify-between items-center mb-8">
+          <button onClick={onClose} className="text-white/50 hover:text-white transition-colors text-base font-medium">Cancel</button>
+          <h3 className="text-white font-semibold text-lg tracking-wide">Select Duration</h3>
+          <button onClick={handleSave} className="text-emerald-400 font-bold hover:text-emerald-300 transition-colors text-base shadow-emerald-500/20 drop-shadow-sm">Done</button>
         </div>
 
-        <div className="flex justify-center gap-4 h-48 relative">
-          <div className="absolute top-1/2 -translate-y-1/2 w-full h-12 bg-white/10 rounded-xl pointer-events-none border border-white/10" />
+        <div className="flex justify-center gap-4 h-56 relative perspective-1000">
+          <div className="absolute top-1/2 -translate-y-1/2 w-full h-12 bg-white/10 rounded-xl pointer-events-none border-y border-white/20 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-[1px]" />
 
-          {/* Hours Column */}
-          <div ref={hourRef} className="w-24 overflow-y-scroll no-scrollbar py-[calc(6rem-1.5rem)] snap-y snap-mandatory text-center">
+          <div ref={hourRef} className="w-24 overflow-y-scroll no-scrollbar py-[calc(7rem-1.5rem)] snap-y snap-mandatory text-center mask-gradient-y">
             {hours.map(h => (
               <div 
                 key={h} 
                 onClick={() => setHour(h)}
-                className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-200 ${hour === h ? 'text-white text-2xl font-bold' : 'text-white/30 text-lg'}`}
+                className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-300 ${hour === h ? 'text-white text-3xl font-semibold scale-110' : 'text-white/30 text-xl font-medium'}`}
               >
-                {h} <span className="text-sm ml-1 font-normal opacity-50">ชม.</span>
+                {h} <span className="text-sm ml-1.5 font-normal opacity-50 tracking-wider">Hr</span>
               </div>
             ))}
           </div>
 
-          <div className="flex items-center text-white pb-1 font-bold text-xl">:</div>
+          <div className="flex items-center text-white/50 pb-1 font-thin text-xl z-10">:</div>
 
-          {/* Minutes Column */}
-          <div ref={minuteRef} className="w-24 overflow-y-scroll no-scrollbar py-[calc(6rem-1.5rem)] snap-y snap-mandatory text-center">
+          <div ref={minuteRef} className="w-24 overflow-y-scroll no-scrollbar py-[calc(7rem-1.5rem)] snap-y snap-mandatory text-center mask-gradient-y">
             {minutes.map(m => (
               <div 
                 key={m} 
                 onClick={() => setMinute(m)}
-                className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-200 ${minute === m ? 'text-white text-2xl font-bold' : 'text-white/30 text-lg'}`}
+                className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-300 ${minute === m ? 'text-white text-3xl font-semibold scale-110' : 'text-white/30 text-xl font-medium'}`}
               >
-                {m} <span className="text-sm ml-1 font-normal opacity-50">นาที</span>
+                {m} <span className="text-sm ml-1.5 font-normal opacity-50 tracking-wider">Min</span>
               </div>
             ))}
           </div>
@@ -341,18 +344,18 @@ const Header = ({ title, onBack, onMenuClick }) => (
   <div className="flex items-center justify-between px-6 pt-12 pb-4 z-20">
     <div className="flex items-center gap-3">
       {onBack ? (
-        <button onClick={onBack} className="p-2.5 rounded-full bg-emerald-900/40 backdrop-blur-xl border border-emerald-500/20 shadow-sm text-emerald-100 hover:bg-emerald-800/50 hover:border-emerald-400/50 hover:shadow-[0_0_15px_rgba(52,211,153,0.3)] transition-all active:scale-90">
+        <button onClick={onBack} className="p-2.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] text-white hover:bg-white/20 hover:border-white/30 transition-all active:scale-95 active:bg-white/5">
           <ChevronLeft size={22} />
         </button>
       ) : (
-        <button onClick={onMenuClick} className="p-2.5 rounded-full bg-emerald-950/80 backdrop-blur-xl text-emerald-400 shadow-lg border border-emerald-500/20 active:scale-95 transition-transform">
+        <button onClick={onMenuClick} className="p-2.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] text-white hover:bg-white/20 hover:border-white/30 transition-all active:scale-95 active:bg-white/5">
            <Menu size={22} />
         </button>
       )}
-      <span className="text-xl font-bold tracking-tight drop-shadow-md text-emerald-50">{title}</span>
+      <span className="text-xl font-bold tracking-tight drop-shadow-md text-white/90">{title}</span>
     </div>
-    <div className="w-10 h-10 rounded-full bg-emerald-900/20 border-2 border-emerald-500/20 shadow-sm overflow-hidden backdrop-blur-sm">
-      <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=Admin`} alt="User" className="w-full h-full object-cover" />
+    <div className="w-10 h-10 rounded-full bg-white/10 border-2 border-white/20 shadow-lg overflow-hidden backdrop-blur-md">
+      <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=Admin`} alt="User" className="w-full h-full object-cover opacity-90" />
     </div>
   </div>
 );
@@ -360,22 +363,21 @@ const Header = ({ title, onBack, onMenuClick }) => (
 const RoomCardBento = ({ room, bookings, onSelect }) => {
   const { status, text, detail } = getStatus(room.id, bookings);
   
-  // Dynamic Styling based on Status
   let statusColor = 'bg-emerald-400';
-  let badgeStyle = 'bg-black/20 border-white/10 text-white';
-  let badgeLayout = 'px-4 py-2 rounded-full w-auto';
-  let cardOverlay = 'bg-black/20'; 
+  let badgeStyle = 'bg-white/10 border-white/20 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]';
+  let badgeLayout = 'px-4 py-2 rounded-full w-auto backdrop-blur-md border';
+  let cardOverlay = 'bg-black/30'; 
 
   if (status === 'busy') {
       statusColor = 'bg-rose-500';
-      badgeStyle = 'bg-rose-600/80 border-rose-500/50 text-white shadow-rose-900/50 shadow-lg backdrop-blur-md';
-      badgeLayout = 'px-6 py-3 rounded-2xl w-full justify-center'; 
-      cardOverlay = 'bg-rose-900/30 mix-blend-multiply'; 
+      badgeStyle = 'bg-rose-500/20 border-rose-500/40 text-white shadow-[inset_0_1px_0_0_rgba(255,100,100,0.2)]';
+      badgeLayout = 'px-6 py-3 rounded-2xl w-full justify-center backdrop-blur-xl border'; 
+      cardOverlay = 'bg-rose-900/40 mix-blend-multiply'; 
   } else if (status === 'soon') {
       statusColor = 'bg-amber-400';
-      badgeStyle = 'bg-amber-500/80 border-amber-400/50 text-white shadow-amber-900/50 shadow-lg backdrop-blur-md';
-      badgeLayout = 'px-6 py-3 rounded-2xl w-full justify-center'; 
-      cardOverlay = 'bg-amber-900/30 mix-blend-multiply'; 
+      badgeStyle = 'bg-amber-500/20 border-amber-400/40 text-white shadow-[inset_0_1px_0_0_rgba(255,200,100,0.2)]';
+      badgeLayout = 'px-6 py-3 rounded-2xl w-full justify-center backdrop-blur-xl border'; 
+      cardOverlay = 'bg-amber-900/40 mix-blend-multiply'; 
   }
 
   const upcomingBookings = bookings
@@ -384,20 +386,20 @@ const RoomCardBento = ({ room, bookings, onSelect }) => {
     .slice(0, 10); 
 
   return (
-    <div onClick={() => onSelect(room)} className="relative group flex-1 rounded-[2.5rem] overflow-hidden cursor-pointer active:scale-[0.98] transition-all duration-500 shadow-sm hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ring-1 ring-emerald-900/20 hover:ring-emerald-400/30">
+    <div onClick={() => onSelect(room)} className="relative group flex-1 rounded-[2.5rem] overflow-hidden cursor-pointer active:scale-[0.98] transition-all duration-500 shadow-2xl ring-1 ring-white/10 hover:ring-white/20">
       <div className="absolute inset-0">
           <img src={room.image} alt={room.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
-          <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/90 via-emerald-900/40 to-emerald-900/10 mix-blend-multiply" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
           <div className={`absolute inset-0 ${cardOverlay} transition-colors duration-500`} /> 
       </div>
       <div className="relative h-full flex flex-col justify-between p-6">
           <div className="flex justify-between items-start">
-              <div className={`${badgeLayout} border flex items-center gap-3 transition-all duration-500`}>
+              <div className={`${badgeLayout} ${badgeStyle} flex items-center gap-3 transition-all duration-500`}>
                   <div className={`relative flex h-3 w-3`}>
                     <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${statusColor}`}></span>
                     <span className={`relative inline-flex rounded-full h-3 w-3 ${statusColor}`}></span>
                   </div>
-                  <span className="text-xs font-bold tracking-widest uppercase drop-shadow-md flex items-center gap-2">
+                  <span className="text-xs font-bold tracking-widest uppercase drop-shadow-sm flex items-center gap-2">
                       {text}
                       {status === 'soon' && <AlertTriangle size={14} className="animate-pulse" />}
                   </span>
@@ -405,42 +407,38 @@ const RoomCardBento = ({ room, bookings, onSelect }) => {
           </div>
           <div className="space-y-4">
               <div className="px-2">
-                  <h2 className="text-3xl font-bold text-white tracking-tight drop-shadow-xl">{room.name}</h2>
-                  <div className="flex items-center gap-3 text-emerald-100/90 text-sm font-medium mt-1">
+                  <h2 className="text-3xl font-bold text-white tracking-tight drop-shadow-lg leading-tight">{room.name}</h2>
+                  <div className="flex items-center gap-3 text-white/80 text-sm font-medium mt-2">
                       <span>{room.thName}</span>
-                      <span className="w-1 h-1 bg-emerald-400/60 rounded-full"></span>
-                      <span className="flex items-center gap-1"><Users size={12} /> {room.capacity}</span>
+                      <span className="w-1 h-1 bg-white/40 rounded-full"></span>
+                      <span className="flex items-center gap-1"><Users size={14} className="text-white/60"/> {room.capacity}</span>
                   </div>
               </div>
-              <div className={`backdrop-blur-xl border border-white/10 rounded-[1.5rem] p-3 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] ring-1 ring-white/5 transition-colors ${status === 'busy' ? 'bg-rose-900/40' : status === 'soon' ? 'bg-amber-900/40' : 'bg-emerald-950/30'}`}>
+              <div className={`backdrop-blur-xl border border-white/10 rounded-[1.8rem] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] ring-1 ring-white/5 transition-colors ${status === 'busy' ? 'bg-rose-950/40' : status === 'soon' ? 'bg-amber-950/40' : 'bg-white/5'}`}>
                   <div className="flex items-center justify-between mb-3 px-1">
-                       <span className="text-[10px] text-emerald-100/70 uppercase tracking-wider font-bold">Upcoming Queue</span>
-                       <span className="text-[10px] font-medium text-emerald-200 bg-black/20 px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/10">
-                          {upcomingBookings.length} Slots
+                       <span className="text-[10px] text-white/60 uppercase tracking-wider font-bold">Queue</span>
+                       <span className="text-[10px] font-medium text-white/80 bg-white/5 px-2.5 py-1 rounded-full backdrop-blur-md border border-white/10 shadow-sm">
+                          {upcomingBookings.length} Active
                        </span>
                   </div>
                   <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar snap-x">
                       {upcomingBookings.length === 0 ? (
-                          <div className="w-full py-2 text-center text-xs text-white/50 italic font-medium">No upcoming bookings</div>
+                          <div className="w-full py-2 text-center text-xs text-white/40 italic font-medium">No upcoming bookings</div>
                       ) : (
                           upcomingBookings.map((b, i) => {
                               const isCurrent = new Date().getTime() >= b.start && new Date().getTime() <= b.end;
                               return (
-                                  <div key={i} className={`snap-start flex-shrink-0 min-w-[100px] p-2.5 rounded-2xl border backdrop-blur-md flex flex-col justify-center transition-all ${isCurrent ? 'bg-gradient-to-br from-white/20 to-white/5 border-white/40 shadow-lg' : 'bg-black/20 border-white/5'}`}>
-                                      <div className="flex items-center gap-1.5 mb-1">
-                                          <div className={`w-1.5 h-1.5 rounded-full ${isCurrent ? 'bg-white' : 'bg-white/40'}`} />
-                                          <span className="text-[10px] font-bold text-white tracking-tight">{formatTime(b.start)} - {formatTime(b.end)}</span>
+                                  <div key={i} className={`snap-start flex-shrink-0 min-w-[110px] p-3 rounded-2xl border backdrop-blur-md flex flex-col justify-center transition-all ${isCurrent ? 'bg-gradient-to-br from-white/15 to-white/5 border-white/20 shadow-lg' : 'bg-black/20 border-white/5'}`}>
+                                      <div className="flex items-center gap-1.5 mb-1.5">
+                                          <div className={`w-1.5 h-1.5 rounded-full ${isCurrent ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-white/40'}`} />
+                                          <span className="text-[10px] font-bold text-white/90 tracking-tight">{formatTime(b.start)} - {formatTime(b.end)}</span>
                                       </div>
-                                      <div className="text-[10px] text-white/90 font-semibold truncate w-full pl-3 mb-0.5">{getDisplayName(b.ownerId)}</div>
-                                      <div className="text-[9px] text-white/60 truncate w-full pl-3 mb-0.5">{String(b.owner || '')}</div>
-                                      <div className="text-[9px] text-white/40 font-semibold pl-3 uppercase tracking-wide">{formatDateShort(b.start)}</div>
+                                      <div className="text-[11px] text-white font-semibold truncate w-full mb-0.5">{getDisplayName(b.ownerId)}</div>
+                                      <div className="text-[9px] text-white/50 truncate w-full">{String(b.owner || '')}</div>
                                   </div>
                               );
                           })
                       )}
-                      <div className="snap-start flex-shrink-0 w-8 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/40">
-                          <Plus size={14} />
-                      </div>
                   </div>
               </div>
           </div>
@@ -704,7 +702,7 @@ export default function App() {
             setView('logs');
             setShowMainMenu(false);
             setShowAuthModal(false);
-            setBookerName(''); // Clear security
+            setBookerName(''); 
         } else {
             showNotif('error', 'Access Denied: Incorrect Code');
         }
@@ -773,7 +771,7 @@ export default function App() {
       // Recalc End Time logic
       const [h, m] = startTime.split(':').map(Number);
       const startMins = h * 60 + m;
-      const endMins = startMins + parseInt(totalMins);
+      const endMins = startMins + parseInt(totalMinsStr);
       const endH = Math.floor(endMins / 60) % 24;
       const endM = endMins % 60;
       setEndTime(`${endH.toString().padStart(2,'0')}:${endM.toString().padStart(2,'0')}`);
@@ -790,67 +788,67 @@ export default function App() {
   const ChevronRight = ({className}) => <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>;
 
   const renderMainMenuOverlay = () => (
-      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex flex-col animate-in fade-in duration-200">
+      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex flex-col animate-in fade-in duration-200" style={{fontFamily: "-apple-system, BlinkMacSystemFont, 'Sukhumvit Set', sans-serif"}}>
           <div className="flex-1" onClick={() => setShowMainMenu(false)} />
-          <div className="bg-gray-900/90 backdrop-blur-2xl border-t border-white/10 rounded-t-[2.5rem] p-6 pb-12 shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
-              <div className="flex justify-center mb-6">
+          <div className="bg-gray-900/80 backdrop-blur-3xl border-t border-white/20 rounded-t-[2.5rem] p-6 pb-12 shadow-[0_-20px_60px_rgba(0,0,0,0.7)] animate-in slide-in-from-bottom-10 duration-300 ring-1 ring-white/10">
+              <div className="flex justify-center mb-8">
                   <div className="w-12 h-1.5 bg-white/20 rounded-full" />
               </div>
               <div className="space-y-4">
-                  <button onClick={() => { setAuthAction('viewLogs'); setShowAuthModal(true); }} className="w-full p-4 bg-gradient-to-br from-white/10 to-white/5 hover:from-blue-900/40 hover:to-blue-800/20 rounded-2xl flex items-center gap-4 border border-white/10 shadow-lg active:scale-[0.98] transition-all duration-200 group relative overflow-hidden">
-                      <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/10 transition-colors duration-300" />
-                      <div className="p-3.5 bg-blue-500/20 text-blue-400 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-all shadow-inner relative z-10">
-                          <FileText size={24} />
+                  <button onClick={() => { setAuthAction('viewLogs'); setShowAuthModal(true); }} className="w-full p-5 bg-gradient-to-br from-white/10 to-white/5 hover:from-blue-600/30 hover:to-blue-900/10 rounded-3xl flex items-center gap-5 border border-white/10 shadow-lg active:scale-[0.98] transition-all duration-300 group relative overflow-hidden">
+                      <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/5 transition-colors duration-500" />
+                      <div className="p-4 bg-blue-500/20 text-blue-400 rounded-2xl group-hover:bg-blue-500 group-hover:text-white transition-all shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] relative z-10">
+                          <FileText size={26} />
                       </div>
                       <div className="text-left relative z-10">
-                          <span className="block text-white font-bold text-lg tracking-tight group-hover:text-blue-100 transition-colors">Activity Log</span>
-                          <span className="text-white/40 text-sm group-hover:text-blue-200/60 transition-colors">ดูประวัติการแก้ไขระบบ</span>
+                          <span className="block text-white font-bold text-xl tracking-tight group-hover:text-blue-100 transition-colors mb-0.5">Activity Log</span>
+                          <span className="text-white/40 text-sm font-medium group-hover:text-blue-200/60 transition-colors">ประวัติการแก้ไขระบบ</span>
                       </div>
                       <div className="ml-auto p-2 rounded-full bg-white/5 group-hover:bg-blue-500/20 text-white/20 group-hover:text-blue-300 transition-all relative z-10">
                           <ChevronRight size={20} className="w-5 h-5" />
                       </div>
                   </button>
-                  <button onClick={() => { setView('history'); setShowMainMenu(false); }} className="w-full p-4 bg-gradient-to-br from-white/10 to-white/5 hover:from-purple-900/40 hover:to-purple-800/20 rounded-2xl flex items-center gap-4 border border-white/10 shadow-lg active:scale-[0.98] transition-all duration-200 group relative overflow-hidden">
-                      <div className="absolute inset-0 bg-purple-500/0 group-hover:bg-purple-500/10 transition-colors duration-300" />
-                      <div className="p-3.5 bg-purple-500/20 text-purple-400 rounded-xl group-hover:bg-purple-500 group-hover:text-white transition-all shadow-inner relative z-10">
-                          <History size={24} />
+                  <button onClick={() => { setView('history'); setShowMainMenu(false); }} className="w-full p-5 bg-gradient-to-br from-white/10 to-white/5 hover:from-purple-600/30 hover:to-purple-900/10 rounded-3xl flex items-center gap-5 border border-white/10 shadow-lg active:scale-[0.98] transition-all duration-300 group relative overflow-hidden">
+                      <div className="absolute inset-0 bg-purple-500/0 group-hover:bg-purple-500/5 transition-colors duration-500" />
+                      <div className="p-4 bg-purple-500/20 text-purple-400 rounded-2xl group-hover:bg-purple-500 group-hover:text-white transition-all shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] relative z-10">
+                          <History size={26} />
                       </div>
                       <div className="text-left relative z-10">
-                          <span className="block text-white font-bold text-lg tracking-tight group-hover:text-purple-100 transition-colors">Booking History</span>
-                          <span className="text-white/40 text-sm group-hover:text-purple-200/60 transition-colors">รายงานการใช้งานย้อนหลัง</span>
+                          <span className="block text-white font-bold text-xl tracking-tight group-hover:text-purple-100 transition-colors mb-0.5">Booking History</span>
+                          <span className="text-white/40 text-sm font-medium group-hover:text-purple-200/60 transition-colors">ประวัติการจองย้อนหลัง</span>
                       </div>
                       <div className="ml-auto p-2 rounded-full bg-white/5 group-hover:bg-purple-500/20 text-white/20 group-hover:text-purple-300 transition-all relative z-10">
                           <ChevronRight size={20} className="w-5 h-5" />
                       </div>
                   </button>
               </div>
-              <button onClick={() => setShowMainMenu(false)} className="w-full mt-6 py-4 text-white/40 font-bold hover:text-white transition-colors">Close Menu</button>
+              <button onClick={() => setShowMainMenu(false)} className="w-full mt-8 py-4 text-white/40 font-bold hover:text-white transition-colors text-base tracking-wide">Close Menu</button>
           </div>
       </div>
   );
 
   const renderLogsView = () => (
-      <div className="h-full flex flex-col bg-gray-950 text-white">
+      <div className="h-full flex flex-col bg-gray-950 text-white" style={{fontFamily: "-apple-system, BlinkMacSystemFont, 'Sukhumvit Set', sans-serif"}}>
           <Header title="Activity Log" onBack={() => setView('dashboard')} />
           <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-4">
               {logs.length === 0 ? (
-                  <div className="text-center text-white/30 py-10">ยังไม่มีประวัติการใช้งาน</div>
+                  <div className="text-center text-white/30 py-10 font-medium">ยังไม่มีประวัติการใช้งาน</div>
               ) : (
                   logs.map((log) => (
-                      <div key={log.id} className="bg-white/5 border border-white/5 p-4 rounded-2xl">
-                          <div className="flex justify-between items-start mb-2">
-                              <span className={`text-xs font-bold px-2 py-1 rounded uppercase ${
-                                  log.action === 'create' ? 'bg-emerald-500/20 text-emerald-400' : 
-                                  log.action === 'delete' ? 'bg-red-500/20 text-red-400' : 
-                                  'bg-blue-500/20 text-blue-400'
+                      <div key={log.id} className="bg-white/5 border border-white/10 p-5 rounded-[1.5rem] shadow-sm backdrop-blur-md">
+                          <div className="flex justify-between items-start mb-3">
+                              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm border border-white/5 ${
+                                  log.action === 'create' ? 'bg-emerald-500/20 text-emerald-300' : 
+                                  log.action === 'delete' ? 'bg-red-500/20 text-red-300' : 
+                                  'bg-blue-500/20 text-blue-300'
                               }`}>
                                   {log.action}
                               </span>
-                              <span className="text-xs text-white/40">{new Date(log.timestamp).toLocaleString()}</span>
+                              <span className="text-[10px] text-white/40 font-medium">{new Date(log.timestamp).toLocaleString('en-GB')}</span>
                           </div>
-                          <p className="text-sm text-white/80 mb-2">{log.details}</p>
-                          <div className="flex items-center gap-2 text-xs text-white/40">
-                              <User size={12} /> โดย: {getDisplayName(log.user)}
+                          <p className="text-sm text-white/90 mb-3 font-medium leading-relaxed">{log.details}</p>
+                          <div className="flex items-center gap-2 text-xs text-white/40 font-medium pt-3 border-t border-white/5">
+                              <User size={12} /> by {getDisplayName(log.user)}
                           </div>
                       </div>
                   ))
@@ -862,36 +860,36 @@ export default function App() {
   const renderHistoryView = () => {
       const pastBookings = bookings.filter(b => b.end < new Date().getTime()).sort((a,b) => b.start - a.start);
       return (
-        <div className="h-full flex flex-col bg-gray-950 text-white">
+        <div className="h-full flex flex-col bg-gray-950 text-white" style={{fontFamily: "-apple-system, BlinkMacSystemFont, 'Sukhumvit Set', sans-serif"}}>
             <Header title="Booking History" onBack={() => setView('dashboard')} />
             <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-4">
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-4 px-1">
                     <History size={16} className="text-purple-400" />
-                    <span className="text-sm font-bold text-purple-100 uppercase tracking-wider">Past Bookings ({pastBookings.length})</span>
+                    <span className="text-xs font-bold text-purple-200 uppercase tracking-widest">Past Bookings ({pastBookings.length})</span>
                 </div>
                 {pastBookings.length === 0 ? (
-                    <div className="text-center text-white/30 py-10">ยังไม่มีประวัติการจองที่ผ่านมา</div>
+                    <div className="text-center text-white/30 py-10 font-medium">ยังไม่มีประวัติการจองที่ผ่านมา</div>
                 ) : (
                     pastBookings.map((b) => (
-                        <div key={b.id} className="bg-white/5 border border-white/10 p-4 rounded-2xl flex flex-col gap-2 opacity-80 hover:opacity-100 transition-opacity">
-                            <div className="flex justify-between items-center border-b border-white/5 pb-2 mb-1">
-                                <div className="text-emerald-300 font-bold text-sm">
-                                    {new Date(b.start).toLocaleDateString()}
+                        <div key={b.id} className="bg-gradient-to-br from-white/10 to-white/5 border border-white/10 p-5 rounded-[1.5rem] flex flex-col gap-3 opacity-90 hover:opacity-100 transition-opacity shadow-lg backdrop-blur-md">
+                            <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-1">
+                                <div className="text-emerald-400 font-bold text-sm tracking-tight">
+                                    {new Date(b.start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </div>
-                                <span className="text-xs text-white/30">{b.roomId === 'big' ? 'Grand Room' : 'Focus Room'}</span>
+                                <span className="text-[10px] text-white/50 bg-white/10 px-2 py-0.5 rounded-full border border-white/5">{b.roomId === 'big' ? 'Grand Room' : 'Focus Room'}</span>
                             </div>
                             
                             <div>
-                                <div className="text-white font-bold text-lg leading-tight">{b.title}</div>
-                                {b.description && <div className="text-xs text-white/50 mt-1 line-clamp-1 italic">"{b.description}"</div>}
+                                <div className="text-white font-bold text-lg leading-snug tracking-tight">{b.title}</div>
+                                {b.description && <div className="text-xs text-white/60 mt-1.5 line-clamp-2 leading-relaxed font-light">"{b.description}"</div>}
                             </div>
                             
-                            <div className="flex justify-between items-end mt-2">
-                                <div className="text-xs text-emerald-200/60 flex items-center gap-1">
+                            <div className="flex justify-between items-end mt-1 pt-3 border-t border-white/5">
+                                <div className="text-xs text-emerald-100/70 flex items-center gap-1.5 font-medium bg-emerald-900/30 px-2 py-1 rounded-lg">
                                     <Clock size={12} /> {formatTime(b.start)} - {formatTime(b.end)}
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-xs font-bold text-white">{getDisplayName(b.ownerId)}</div>
+                                    <div className="text-xs font-bold text-white flex items-center justify-end gap-1 mb-0.5"><User size={10} className="text-white/60"/> {getDisplayName(b.ownerId)}</div>
                                     <div className="text-[10px] text-white/40">{b.owner}</div>
                                 </div>
                             </div>
@@ -904,20 +902,20 @@ export default function App() {
   };
 
   const renderDashboard = () => (
-    <div className="h-full flex flex-col bg-gray-950 text-white">
+    <div className="h-full flex flex-col bg-gray-950 text-white" style={{fontFamily: "-apple-system, BlinkMacSystemFont, 'Sukhumvit Set', sans-serif"}}>
       <Header title="Lab-D Meeting Room" onMenuClick={() => setShowMainMenu(true)} />
       <div className="flex-1 px-5 pb-5 flex flex-col gap-4 overflow-hidden">
         <div className="flex items-center justify-between px-2 py-1">
-             <div className="text-sm font-medium text-emerald-200/60">
+             <div className="text-sm font-medium text-emerald-100/60">
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
              </div>
-             <div className="flex items-center gap-1 text-xs font-bold text-emerald-400 uppercase tracking-widest drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">
+             <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded-full border border-emerald-500/20 shadow-[0_0_10px_rgba(52,211,153,0.3)]">
                  <Zap size={12} fill="currentColor" /> {loading ? 'Connecting...' : 'Live Status'}
              </div>
         </div>
         {loading ? (
           <div className="flex-1 flex items-center justify-center text-emerald-500/50">
-            <Loader2 className="animate-spin" size={32} />
+            <Loader2 className="animate-spin" size={40} />
           </div>
         ) : (
           ROOMS.map(room => (
@@ -936,46 +934,57 @@ export default function App() {
     let lastDate = '';
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
+        <div className="fixed inset-0 z-50 flex items-end justify-center" style={{fontFamily: "-apple-system, BlinkMacSystemFont, 'Sukhumvit Set', sans-serif"}}>
             <div className="absolute inset-0 z-0">
                 <img src={selectedRoom?.image} className="w-full h-full object-cover" alt="Room Background" />
-                <div className="absolute inset-0 bg-emerald-950/70 backdrop-blur-md" />
+                <div className="absolute inset-0 bg-emerald-950/60 backdrop-blur-md" />
             </div>
             
             <div className="absolute inset-0 z-10" onClick={() => setView('dashboard')} />
             
-            <div className="relative z-20 w-full h-[90vh] p-6 animate-in slide-in-from-bottom-20 duration-500 flex flex-col">
-                <div className="bg-emerald-900/40 backdrop-blur-3xl rounded-[2.5rem] p-6 shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/10 ring-1 ring-white/5 flex-1 flex flex-col overflow-hidden">
-                    <div className="flex justify-between items-center mb-6 shrink-0">
+            <div className="relative z-20 w-full h-[90vh] p-4 sm:p-6 animate-in slide-in-from-bottom-20 duration-500 flex flex-col">
+                <div className="bg-emerald-900/40 backdrop-blur-3xl rounded-[2.5rem] p-6 shadow-[0_0_80px_rgba(0,0,0,0.6)] border border-white/20 ring-1 ring-white/10 flex-1 flex flex-col overflow-hidden relative">
+                    {/* Glossy Highlight Top */}
+                    <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-70"></div>
+                    
+                    <div className="flex justify-between items-center mb-8 shrink-0">
                         <div className="text-white">
-                            <h2 className="text-2xl font-bold tracking-tight drop-shadow-lg">{selectedRoom.name}</h2>
-                            <p className="text-emerald-200/60 font-medium flex items-center gap-1 text-sm mt-0.5">
-                                <MapPin size={12}/> {selectedRoom.thName}
+                            <h2 className="text-3xl font-bold tracking-tight drop-shadow-xl">{selectedRoom.name}</h2>
+                            <p className="text-emerald-100/70 font-medium flex items-center gap-1.5 text-sm mt-1">
+                                <MapPin size={14}/> {selectedRoom.thName}
                             </p>
                         </div>
-                        <button onClick={() => setView('dashboard')} className="p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-all border border-white/5 active:scale-90">
-                            <XCircle size={24} className="text-white/80" />
+                        <button onClick={() => setView('dashboard')} className="p-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-all border border-white/10 active:scale-90 shadow-lg">
+                            <XCircle size={26} className="text-white/90" />
                         </button>
                     </div>
-                    <button onClick={() => initBookingForm(false)} className="w-full p-4 mb-6 bg-white text-emerald-950 rounded-2xl flex items-center justify-between shadow-[0_0_20px_rgba(255,255,255,0.15)] active:scale-[0.98] transition-all border border-white/20 group hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] shrink-0">
-                        <div className="flex items-center gap-4">
-                            <div className="p-2.5 bg-emerald-100 rounded-xl"><Plus size={24} className="text-emerald-900"/></div>
+                    
+                    <button 
+                        onClick={() => initBookingForm(false)} 
+                        className="w-full p-5 mb-8 bg-gradient-to-b from-white to-gray-100 text-emerald-950 rounded-3xl flex items-center justify-between shadow-[0_10px_40px_-10px_rgba(255,255,255,0.4)] active:scale-[0.98] transition-all border border-white group hover:shadow-[0_0_50px_-10px_rgba(255,255,255,0.5)] shrink-0 relative overflow-hidden"
+                    >
+                        <div className="absolute inset-0 bg-white/50 opacity-0 group-active:opacity-100 transition-opacity" />
+                        <div className="flex items-center gap-5 relative z-10">
+                            <div className="p-3 bg-emerald-100 rounded-2xl shadow-inner"><Plus size={28} className="text-emerald-900"/></div>
                             <div className="text-left">
-                                <span className="block font-bold text-lg">Book This Room</span>
-                                <span className="text-xs text-emerald-800 font-medium">Reserve a slot now</span>
+                                <span className="block font-bold text-xl tracking-tight">Book This Room</span>
+                                <span className="text-sm text-emerald-800 font-medium opacity-80">Reserve a slot now</span>
                             </div>
                         </div>
-                        <ArrowRight size={20} className="text-emerald-400 group-hover:text-emerald-900 transition-colors"/>
+                        <ArrowRight size={24} className="text-emerald-500 group-hover:text-emerald-900 transition-colors relative z-10"/>
                     </button>
-                    <div className="flex items-center gap-2 mb-3 px-1 shrink-0">
-                        <Calendar size={16} className="text-emerald-400" />
-                        <span className="text-sm font-bold text-emerald-100 uppercase tracking-wider">Upcoming Queue ({roomBookings.length})</span>
+
+                    <div className="flex items-center gap-2 mb-4 px-1 shrink-0">
+                        <Calendar size={18} className="text-emerald-400" />
+                        <span className="text-sm font-bold text-emerald-100 uppercase tracking-widest">Upcoming Queue ({roomBookings.length})</span>
                     </div>
+
                     <div className="flex-1 overflow-y-auto pr-1 space-y-3 pb-4">
                         {roomBookings.length === 0 ? (
-                            <div className="h-32 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl bg-white/5 text-white/30">
-                                <span className="text-sm">No bookings yet</span>
-                                <span className="text-xs mt-1">Be the first to book!</span>
+                            <div className="h-40 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-3xl bg-white/5 text-white/30 gap-2">
+                                <Calendar size={32} className="opacity-50" />
+                                <span className="text-sm font-medium">No bookings yet</span>
+                                <span className="text-xs">Be the first to book!</span>
                             </div>
                         ) : (
                             roomBookings.map(b => {
@@ -985,25 +994,28 @@ export default function App() {
                                 return (
                                     <React.Fragment key={b.id}>
                                         {showHeader && (
-                                            <div className="flex items-center gap-3 py-2 mt-2">
-                                                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-                                                <span className="text-xs font-bold text-emerald-200/70 uppercase tracking-widest backdrop-blur-md px-2 py-0.5 rounded-full border border-white/5 bg-white/5">{dateStr}</span>
-                                                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                                            <div className="flex items-center gap-4 py-3 mt-1">
+                                                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                                                <span className="text-[10px] font-bold text-emerald-200/80 uppercase tracking-[0.2em] backdrop-blur-md px-3 py-1 rounded-full border border-white/5 bg-white/5 shadow-sm">{dateStr}</span>
+                                                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
                                             </div>
                                         )}
-                                        <div className="relative bg-white/5 hover:bg-white/10 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-white/10 flex justify-between items-center transition-all group">
+                                        <div className="relative bg-white/5 hover:bg-white/10 backdrop-blur-md p-5 rounded-[1.5rem] shadow-sm border border-white/10 flex justify-between items-center transition-all group active:scale-[0.99] active:bg-white/15">
                                             <div className="flex-1 min-w-0 pr-4">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-emerald-300 font-bold text-lg tracking-tight">{formatTime(b.start)} - {formatTime(b.end)}</span>
+                                                <div className="flex items-center gap-2.5 mb-1.5">
+                                                    <span className="text-emerald-300 font-bold text-xl tracking-tight">{formatTime(b.start)} <span className="text-white/30 text-sm font-light mx-1">to</span> {formatTime(b.end)}</span>
                                                 </div>
-                                                <div className="font-bold text-white truncate">{b.title}</div>
-                                                <div className="text-xs text-emerald-200/60 mt-0.5 flex items-center gap-1">
-                                                    <User size={10} /> {getDisplayName(b.ownerId)} <span className="text-white/30">•</span> {b.owner}
+                                                <div className="font-bold text-white text-lg truncate mb-1">{b.title}</div>
+                                                <div className="text-xs text-emerald-100/60 flex items-center gap-1.5">
+                                                    <div className="flex items-center gap-1 bg-white/10 px-1.5 py-0.5 rounded text-[10px] border border-white/5">
+                                                        <User size={10} /> {getDisplayName(b.ownerId)}
+                                                    </div>
+                                                    <span className="text-white/20">•</span> {b.owner}
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2 shrink-0">
-                                                <button onClick={() => { setPendingBookingData(b); setAuthAction('edit'); setShowAuthModal(true); }} className="p-2.5 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-white/50 hover:text-emerald-400 border border-white/5 transition-all active:scale-90"><Edit2 size={18} /></button>
-                                                <button onClick={() => { setPendingBookingData(b); setAuthAction('delete'); setShowAuthModal(true); }} className="p-2.5 rounded-xl bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-400 border border-white/5 transition-all active:scale-90"><Trash2 size={18} /></button>
+                                            <div className="flex flex-col gap-2 shrink-0">
+                                                <button onClick={() => { setPendingBookingData(b); setAuthAction('edit'); setShowAuthModal(true); }} className="p-2.5 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-white/40 hover:text-emerald-400 border border-white/5 transition-all shadow-sm"><Edit2 size={18} /></button>
+                                                <button onClick={() => { setPendingBookingData(b); setAuthAction('delete'); setShowAuthModal(true); }} className="p-2.5 rounded-xl bg-white/5 hover:bg-red-500/20 text-white/40 hover:text-red-400 border border-white/5 transition-all shadow-sm"><Trash2 size={18} /></button>
                                             </div>
                                         </div>
                                     </React.Fragment>
@@ -1027,54 +1039,56 @@ export default function App() {
     };
 
     return (
-        <div className="h-full relative flex flex-col">
+        <div className="h-full relative flex flex-col" style={{fontFamily: "-apple-system, BlinkMacSystemFont, 'Sukhumvit Set', sans-serif"}}>
         <div className="absolute inset-0 z-0">
             <img src={selectedRoom?.image} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-emerald-950/80 backdrop-blur-xl" /> 
         </div>
         <Header title={editingBookingId ? 'Edit Booking' : 'New Booking'} onBack={() => setView('menu')} />
-        <div className="p-6 flex-1 flex flex-col gap-6 relative z-10 overflow-y-auto">
-            <div className="bg-emerald-900/20 backdrop-blur-xl p-6 rounded-[2rem] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] border border-white/10 ring-1 ring-white/5 space-y-6">
+        <div className="p-6 flex-1 flex flex-col gap-6 relative z-10 overflow-y-auto pb-10">
+            <div className="bg-emerald-900/20 backdrop-blur-xl p-6 rounded-[2rem] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] border border-white/10 ring-1 ring-white/5 space-y-6 relative overflow-hidden">
+             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
             <div>
-                <label className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3 block drop-shadow-sm">Meeting Title <span className="text-red-400">*</span></label>
+                <label className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3 block drop-shadow-sm ml-1">Meeting Title <span className="text-red-400">*</span></label>
                 <input 
                     type="text" 
                     placeholder="e.g. Project Kickoff" 
-                    className={`w-full text-xl font-bold bg-black/20 border py-4 px-4 rounded-2xl focus:outline-none focus:bg-black/40 focus:border-emerald-400/50 transition-all placeholder:text-white/20 text-white ${!isTitleValid && bookingTitle !== '' ? 'border-red-500/50' : 'border-white/10'}`}
+                    className={`w-full text-xl font-bold bg-white/5 border py-4 px-5 rounded-2xl focus:outline-none focus:bg-white/10 focus:border-emerald-400/50 transition-all placeholder:text-white/20 text-white shadow-inner ${!isTitleValid && bookingTitle !== '' ? 'border-red-500/50' : 'border-white/10'}`}
                     value={bookingTitle} 
                     onChange={(e) => setBookingTitle(e.target.value)} 
                     autoFocus={!editingBookingId} 
                 />
             </div>
             <div>
-                <label className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3 block drop-shadow-sm">Department <span className="text-red-400">*</span></label>
+                <label className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3 block drop-shadow-sm ml-1">Department <span className="text-red-400">*</span></label>
                 <input 
                     type="text" 
                     placeholder="e.g. Marketing, HR" 
-                    className={`w-full text-xl font-bold bg-black/20 border py-4 px-4 rounded-2xl focus:outline-none focus:bg-black/40 focus:border-emerald-400/50 transition-all placeholder:text-white/20 text-white ${!isDeptValid && department !== '' ? 'border-red-500/50' : 'border-white/10'}`}
+                    className={`w-full text-xl font-bold bg-white/5 border py-4 px-5 rounded-2xl focus:outline-none focus:bg-white/10 focus:border-emerald-400/50 transition-all placeholder:text-white/20 text-white shadow-inner ${!isDeptValid && department !== '' ? 'border-red-500/50' : 'border-white/10'}`}
                     value={department} 
                     onChange={(e) => setDepartment(e.target.value)} 
                 />
             </div>
             <div>
-                <label className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3 block drop-shadow-sm flex items-center gap-2"><AlignLeft size={14} /> Description (Optional)</label>
+                <label className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3 block drop-shadow-sm flex items-center gap-2 ml-1"><AlignLeft size={14} /> Description (Optional)</label>
                 <textarea 
                     rows="3"
                     placeholder="Agenda or details..." 
-                    className="w-full text-lg font-medium bg-black/20 border border-white/10 py-4 px-4 rounded-2xl focus:outline-none focus:bg-black/40 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all placeholder:text-white/20 text-white resize-none" 
+                    className="w-full text-lg font-medium bg-white/5 border border-white/10 py-4 px-5 rounded-2xl focus:outline-none focus:bg-white/10 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all placeholder:text-white/20 text-white resize-none shadow-inner" 
                     value={description} 
                     onChange={(e) => setDescription(e.target.value)} 
                 />
             </div>
             </div>
-            <div className="bg-emerald-900/20 backdrop-blur-xl p-6 rounded-[2rem] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] border border-white/10 ring-1 ring-white/5 space-y-6">
+            <div className="bg-emerald-900/20 backdrop-blur-xl p-6 rounded-[2rem] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] border border-white/10 ring-1 ring-white/5 space-y-6 relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
                 <div>
-                    <label className="text-xs text-emerald-400 font-bold mb-3 block uppercase tracking-widest drop-shadow-sm">Date</label>
+                    <label className="text-xs text-emerald-400 font-bold mb-3 block uppercase tracking-widest drop-shadow-sm ml-1">Date</label>
                     <input 
                         type="date" 
                         min={getLocalDateStr()} 
                         onClick={(e) => e.target.showPicker && e.target.showPicker()} 
-                        className="w-full bg-black/20 border border-white/10 p-4 rounded-2xl font-semibold text-white outline-none focus:bg-black/40 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all [color-scheme:dark]" 
+                        className="w-full bg-white/5 border border-white/10 p-4 px-5 rounded-2xl font-bold text-lg text-white outline-none focus:bg-white/10 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all shadow-inner [color-scheme:dark]" 
                         value={bookingDate} 
                         onChange={(e) => setBookingDate(e.target.value)} 
                         disabled={isBookingStarted}
@@ -1082,29 +1096,29 @@ export default function App() {
                 </div>
                 <div className="flex gap-4 items-start">
                     <div className="flex-1">
-                        <div className="flex justify-between items-center mb-3 h-7">
+                        <div className="flex justify-between items-center mb-3 h-7 px-1">
                             <label className="text-xs text-emerald-400 font-bold uppercase tracking-widest drop-shadow-sm">Start</label>
                         </div>
                         <button 
                             disabled={isBookingStarted}
                             onClick={() => !isBookingStarted && setPickerMode('start')}
-                            className={`w-full bg-black/20 border border-white/10 p-4 rounded-2xl font-bold text-center text-lg outline-none focus:bg-black/40 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all text-white hover:bg-black/30 flex items-center justify-center gap-2 ${isBookingStarted ? 'opacity-50 cursor-not-allowed bg-black/40' : ''}`}
+                            className={`w-full bg-white/5 border border-white/10 p-4 rounded-2xl font-bold text-center text-xl outline-none focus:bg-white/10 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all text-white hover:bg-white/10 flex items-center justify-center gap-2 shadow-inner ${isBookingStarted ? 'opacity-50 cursor-not-allowed bg-black/40' : ''}`}
                         >
-                            {isBookingStarted && <Lock size={14} className="text-white/50" />}
+                            {isBookingStarted && <Lock size={16} className="text-white/50" />}
                             {startTime}
                         </button>
                     </div>
-                    <div className="flex flex-col justify-center h-full pt-9">
-                        <ArrowRight size={20} className="text-white/20" />
+                    <div className="flex flex-col justify-center h-full pt-10 opacity-30">
+                        <ArrowRight size={24} className="text-white" />
                     </div>
                     <div className="flex-1 flex flex-col">
                         <div className="flex justify-between items-center mb-3 h-7">
-                             <label className="text-xs text-emerald-400 font-bold uppercase tracking-widest drop-shadow-sm">End</label>
+                             <label className="text-xs text-emerald-400 font-bold uppercase tracking-widest drop-shadow-sm ml-1">End</label>
                              <div className="flex bg-white/10 rounded-lg p-0.5 border border-white/10 backdrop-blur-md shadow-inner">
-                                 <button onClick={() => handleEndTimeModeToggle('specific')} className={`p-1.5 rounded-md transition-all ${endTimeMode === 'specific' ? 'bg-emerald-500 text-black shadow-sm' : 'text-white/40 hover:text-white'}`}>
+                                 <button onClick={() => handleEndTimeModeToggle('specific')} className={`p-1.5 rounded-md transition-all ${endTimeMode === 'specific' ? 'bg-emerald-500 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}>
                                      <Clock size={14} />
                                  </button>
-                                 <button onClick={() => handleEndTimeModeToggle('duration')} className={`p-1.5 rounded-md transition-all ${endTimeMode === 'duration' ? 'bg-emerald-500 text-black shadow-sm' : 'text-white/40 hover:text-white'}`}>
+                                 <button onClick={() => handleEndTimeModeToggle('duration')} className={`p-1.5 rounded-md transition-all ${endTimeMode === 'duration' ? 'bg-emerald-500 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}>
                                      <Timer size={14} />
                                  </button>
                              </div>
@@ -1112,40 +1126,40 @@ export default function App() {
                         {endTimeMode === 'specific' ? (
                             <button 
                                 onClick={() => setPickerMode('end')}
-                                className="w-full bg-black/20 border border-white/10 p-4 rounded-2xl font-bold text-center text-lg outline-none focus:bg-black/40 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all text-white hover:bg-black/30"
+                                className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl font-bold text-center text-xl outline-none focus:bg-white/10 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all text-white hover:bg-white/10 shadow-inner"
                             >
                                 {endTime}
                             </button>
                         ) : (
                             <button 
                                 onClick={() => setPickerMode('duration')}
-                                className="w-full bg-black/20 border border-white/10 p-4 rounded-2xl font-bold text-center text-lg outline-none focus:bg-black/40 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all text-white hover:bg-black/30"
+                                className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl font-bold text-center text-xl outline-none focus:bg-white/10 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all text-white hover:bg-white/10 shadow-inner"
                             >
-                                {Math.floor(parseInt(duration) / 60)} ชม. {parseInt(duration) % 60} นาที
+                                {Math.floor(parseInt(duration) / 60)} <span className="text-sm text-white/50 font-normal">Hr</span> {parseInt(duration) % 60} <span className="text-sm text-white/50 font-normal">Min</span>
                             </button>
                         )}
                         {endTimeMode === 'duration' && (
-                             <div className="text-center text-[10px] text-white/30 mt-2 font-medium">Until {endTime}</div>
+                             <div className="text-center text-[10px] text-white/40 mt-2 font-medium tracking-wide">Until {endTime}</div>
                         )}
                     </div>
                 </div>
             </div>
-            <div className="mt-auto">
+            <div className="mt-auto pt-4">
                 <button 
                     disabled={!isFormValid}
                     onClick={() => { if(editingBookingId) handleSaveBooking(); else { setAuthAction('create'); setShowAuthModal(true); }}} 
-                    className={`w-full font-bold py-5 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.1)] transition-all border 
+                    className={`w-full font-bold text-lg py-5 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] transition-all border 
                         ${isFormValid 
-                            ? 'bg-emerald-50 text-emerald-950 border-white/20 hover:bg-emerald-100 active:bg-emerald-400 active:text-white active:shadow-[0_0_30px_rgba(52,211,153,0.5)] active:scale-[0.98]' 
+                            ? 'bg-gradient-to-b from-white to-gray-200 text-emerald-950 border-white hover:shadow-[0_0_50px_-10px_rgba(255,255,255,0.4)] active:scale-[0.98]' 
                             : 'bg-white/5 text-white/20 border-white/5 cursor-not-allowed'
                         }`}
                 >
                     {editingBookingId ? 'Save Changes' : 'Confirm Booking'}
                 </button>
                 {!isFormValid && (
-                    <div className="flex items-center justify-center gap-2 mt-4 text-red-400 bg-red-500/10 py-3 rounded-xl border border-red-500/20 animate-in fade-in slide-in-from-bottom-2">
-                        <AlertCircle size={16} />
-                        <span className="text-xs font-medium">กรุณากรอกข้อมูลให้ครบถ้วน</span>
+                    <div className="flex items-center justify-center gap-2 mt-4 text-red-300 bg-red-500/10 py-3 rounded-2xl border border-red-500/20 animate-in fade-in slide-in-from-bottom-2 backdrop-blur-md">
+                        <AlertCircle size={18} />
+                        <span className="text-xs font-bold tracking-wide">Please complete all required fields</span>
                     </div>
                 )}
             </div>
@@ -1158,31 +1172,31 @@ export default function App() {
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[60] flex items-center justify-center p-6">
       <div className="bg-emerald-950/40 backdrop-blur-2xl w-full max-w-xs rounded-[2.5rem] p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in zoom-in duration-300 border border-white/10 ring-1 ring-white/10">
         <div className="text-center mb-8">
-            <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(52,211,153,0.2)] ${authAction === 'delete' ? 'bg-red-500/10 text-red-400' : authAction === 'viewLogs' ? 'bg-blue-500/10 text-blue-400' : 'bg-white/5 text-emerald-400'}`}>
-                {authAction === 'delete' ? <Trash2 size={24} /> : authAction === 'viewLogs' ? <Lock size={24} /> : <User size={24} />}
+            <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(52,211,153,0.15)] border border-white/10 ${authAction === 'delete' ? 'bg-red-500/10 text-red-400' : authAction === 'viewLogs' ? 'bg-blue-500/10 text-blue-400' : 'bg-white/5 text-emerald-400'}`}>
+                {authAction === 'delete' ? <Trash2 size={28} /> : authAction === 'viewLogs' ? <Lock size={28} /> : <User size={28} />}
             </div>
-            <h3 className="text-2xl font-bold text-white tracking-tight">
+            <h3 className="text-2xl font-bold text-white tracking-tight mb-2">
                 {authAction === 'delete' ? 'Confirm Delete' : authAction === 'viewLogs' ? 'Security Check' : 'Booking Confirmation'}
             </h3>
-            <p className="text-sm text-emerald-200/50 font-medium">
+            <p className="text-sm text-emerald-100/60 font-medium">
                 {authAction === 'delete' ? 'ใส่ชื่อผู้จองเพื่อยืนยันการลบ' : authAction === 'viewLogs' ? 'กรุณากรอกรหัสผ่าน (Code)' : 'ลงชื่อผู้ทำการจอง'}
             </p>
         </div>
         <input 
             type={authAction === 'viewLogs' ? 'password' : 'text'}
-            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-center text-xl font-bold mb-8 outline-none focus:bg-white/10 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 text-white transition-all placeholder:text-white/10 placeholder:font-normal" 
+            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-center text-xl font-bold mb-8 outline-none focus:bg-white/10 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 text-white transition-all placeholder:text-white/10 placeholder:font-normal shadow-inner" 
             placeholder={authAction === 'viewLogs' ? 'Enter Code' : 'Your Name'}
             value={bookerName} 
             onChange={(e) => setBookerName(e.target.value)} 
             autoFocus 
         />
         <div className="flex gap-3">
-            <button onClick={() => setShowAuthModal(false)} className="flex-1 py-4 text-white/50 hover:bg-white/5 font-bold text-sm rounded-2xl transition-colors active:scale-95">
+            <button onClick={() => setShowAuthModal(false)} className="flex-1 py-4 text-white/50 hover:bg-white/5 font-bold text-sm rounded-2xl transition-colors active:scale-95 border border-transparent hover:border-white/5">
                 Cancel
             </button>
             <button 
                 onClick={handleAuthSubmit} 
-                className={`flex-1 py-4 text-white rounded-2xl font-bold text-sm shadow-[0_0_20px_rgba(0,0,0,0.4)] backdrop-blur-md transition-all active:scale-95 ${authAction === 'delete' ? 'bg-red-500 hover:bg-red-400 shadow-red-500/20' : authAction === 'viewLogs' ? 'bg-blue-500 hover:bg-blue-400 shadow-blue-500/20' : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20'}`}
+                className={`flex-1 py-4 text-white rounded-2xl font-bold text-sm shadow-[0_0_20px_rgba(0,0,0,0.4)] backdrop-blur-md transition-all active:scale-95 border border-white/10 ${authAction === 'delete' ? 'bg-red-500 hover:bg-red-400 shadow-red-500/20' : authAction === 'viewLogs' ? 'bg-blue-500 hover:bg-blue-400 shadow-blue-500/20' : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20'}`}
             >
                 Confirm
             </button>
@@ -1199,10 +1213,12 @@ export default function App() {
   );
 
   return (
-    <div className="bg-gray-950 h-screen w-full font-sans overflow-hidden relative text-white selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="bg-gray-950 h-screen w-full overflow-hidden relative text-white selection:bg-emerald-500/30 selection:text-emerald-200" style={{fontFamily: "-apple-system, BlinkMacSystemFont, 'Sukhumvit Set', 'Thonburi', sans-serif"}}>
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .perspective-1000 { perspective: 1000px; }
+        .mask-gradient-y { -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent); mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent); }
       `}</style>
       <div className="max-w-md mx-auto h-full bg-black shadow-2xl relative flex flex-col">
         {view === 'dashboard' && renderDashboard()}
