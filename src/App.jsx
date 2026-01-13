@@ -191,7 +191,6 @@ const getDisplayName = (name) => {
 
 // --- Custom Components ---
 
-// iOS-Style Glass Time Picker (Updated with minTime support)
 const GlassTimePicker = ({ value, onChange, onClose, title, blockedCheck, minTime }) => {
   const safeValue = value || '09:00';
   const [hour, setHour] = useState(safeValue.split(':')[0].padStart(2, '0'));
@@ -220,7 +219,7 @@ const GlassTimePicker = ({ value, onChange, onClose, title, blockedCheck, minTim
 
   const handleSave = () => {
     if (blockedCheck && blockedCheck(`${hour}:${minute}`)) {
-        return; // Blocked logic
+        return; 
     }
     onChange(`${hour}:${minute}`);
     onClose();
@@ -245,7 +244,6 @@ const GlassTimePicker = ({ value, onChange, onClose, title, blockedCheck, minTim
                     if (parseInt(h) < parseInt(minTime.split(':')[0])) isBlocked = true;
                 }
                 if (blockedCheck && !isBlocked) {
-                   // Check samples in hour
                    isBlocked = blockedCheck(`${h}:00`) && blockedCheck(`${h}:30`);
                 }
                 
@@ -277,12 +275,10 @@ const GlassTimePicker = ({ value, onChange, onClose, title, blockedCheck, minTim
   );
 };
 
-// Glass Duration Picker Component (Fixed)
+// Glass Duration Picker Component
 const GlassDurationPicker = ({ value, onChange, onClose }) => {
-  // Value is string minutes
-  const initVal = parseInt(value) || 60;
-  const initH = Math.floor(initVal / 60);
-  const initM = initVal % 60;
+  const initH = Math.floor(parseInt(value) / 60);
+  const initM = parseInt(value) % 60;
   
   const [hour, setHour] = useState(initH);
   const [minute, setMinute] = useState(initM);
@@ -307,7 +303,7 @@ const GlassDurationPicker = ({ value, onChange, onClose }) => {
 
   const handleSave = () => {
     const totalMinutes = (hour * 60) + minute;
-    const finalMinutes = totalMinutes === 0 ? 5 : totalMinutes; // Min 5 mins
+    const finalMinutes = totalMinutes === 0 ? 5 : totalMinutes; 
     onChange(finalMinutes.toString());
     onClose();
   };
@@ -644,14 +640,6 @@ export default function App() {
     setView('booking');
   };
 
-  const checkOverlap = (startTs, endTs) => {
-      return bookings.some(b => {
-          if (editingBookingId && b.id === editingBookingId) return false;
-          if (b.roomId !== selectedRoom.id) return false;
-          return (startTs < b.end && endTs > b.start);
-      });
-  }
-
   const handleSaveBooking = async () => {
     if (!department) return showNotif('error', 'กรุณาระบุแผนก');
     if (!bookerName) return showNotif('error', 'กรุณาระบุชื่อผู้จอง');
@@ -809,6 +797,15 @@ export default function App() {
             showNotif('error', 'ช่วงเวลานี้ชนกับคิวอื่น');
             return;
         }
+        
+        if (isBookingStarted) {
+             const now = new Date().getTime();
+             if (eTs < now) {
+                 showNotif('error', 'เวลาสิ้นสุดต้องไม่เป็นอดีต');
+                 return;
+             }
+        }
+        
         setEndTime(newTime);
     }
   };
@@ -828,6 +825,14 @@ export default function App() {
       if (checkOverlap(sTs, eTs)) {
           showNotif('error', 'ระยะเวลาที่เลือกชนกับคิวอื่น');
           return;
+      }
+      
+      if (isBookingStarted) {
+          const now = new Date().getTime();
+          if (eTs < now) {
+              showNotif('error', 'เวลาสิ้นสุดต้องไม่เป็นอดีต');
+              return;
+          }
       }
 
       setDuration(newDur);
@@ -1048,6 +1053,25 @@ export default function App() {
                                 const dateStr = new Date(b.start).toLocaleDateString('en-US', {weekday: 'short', day: 'numeric', month: 'short'});
                                 const showHeader = dateStr !== lastDate;
                                 if(showHeader) lastDate = dateStr;
+
+                                const now = new Date().getTime();
+                                const isCurrent = now >= b.start && now <= b.end;
+                                const isSoon = !isCurrent && (b.start > now && b.start - now <= 10 * 60000);
+
+                                let containerClass = "relative bg-white/5 hover:bg-white/10 backdrop-blur-md p-5 rounded-[1.5rem] shadow-sm border border-white/10 flex justify-between items-center transition-all group active:scale-[0.99] active:bg-white/15";
+                                let dotClass = "bg-white/40";
+                                let timeClass = "text-emerald-300 font-bold text-xl tracking-tight";
+                                
+                                if (isCurrent) {
+                                    containerClass = "relative bg-rose-500/20 hover:bg-rose-500/30 backdrop-blur-md p-5 rounded-[1.5rem] shadow-lg border border-rose-500/40 flex justify-between items-center transition-all group active:scale-[0.99]";
+                                    dotClass = "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]";
+                                    timeClass = "text-rose-300 font-bold text-xl tracking-tight";
+                                } else if (isSoon) {
+                                    containerClass = "relative bg-amber-500/20 hover:bg-amber-500/30 backdrop-blur-md p-5 rounded-[1.5rem] shadow-lg border border-amber-500/40 flex justify-between items-center transition-all group active:scale-[0.99]";
+                                    dotClass = "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]";
+                                    timeClass = "text-amber-300 font-bold text-xl tracking-tight";
+                                }
+
                                 return (
                                     <React.Fragment key={b.id}>
                                         {showHeader && (
@@ -1057,14 +1081,19 @@ export default function App() {
                                                 <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
                                             </div>
                                         )}
-                                        <div className="relative bg-white/5 hover:bg-white/10 backdrop-blur-md p-5 rounded-[1.5rem] shadow-sm border border-white/10 flex justify-between items-center transition-all group active:scale-[0.99] active:bg-white/15">
+                                        <div className={containerClass}>
                                             <div className="flex-1 min-w-0 pr-4">
                                                 <div className="flex items-center gap-2.5 mb-1.5">
-                                                    <span className="text-emerald-300 font-bold text-xl tracking-tight">{formatTime(b.start)} <span className="text-white/30 text-sm font-light mx-1">to</span> {formatTime(b.end)}</span>
+                                                    <span className={timeClass}>{formatTime(b.start)} <span className="text-white/30 text-sm font-light mx-1">to</span> {formatTime(b.end)}</span>
+                                                    {(isCurrent || isSoon) && (
+                                                        <span className={`text-[9px] px-2 py-0.5 rounded-full border font-bold tracking-wider ${isCurrent ? 'bg-rose-500/20 text-rose-300 border-rose-500/20' : 'bg-amber-500/20 text-amber-300 border-amber-500/20'}`}>
+                                                            {isCurrent ? 'BUSY' : 'SOON'}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="font-bold text-white text-lg truncate mb-1">{b.title}</div>
                                                 <div className="text-xs text-emerald-100/60 flex items-center gap-1.5">
-                                                    <div className="flex items-center gap-1 bg-white/10 px-1.5 py-0.5 rounded text-[10px] border border-white/5">
+                                                    <div className={`flex items-center gap-1 ${isCurrent ? 'bg-rose-500/10' : isSoon ? 'bg-amber-500/10' : 'bg-white/10'} px-1.5 py-0.5 rounded text-[10px] border border-white/5`}>
                                                         <User size={10} /> {getDisplayName(b.ownerId)}
                                                     </div>
                                                     <span className="text-white/20">•</span> {b.owner}
