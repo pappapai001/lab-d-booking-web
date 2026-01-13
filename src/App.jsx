@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth'; 
 import { 
   getFirestore, 
   collection, 
@@ -28,10 +28,11 @@ import {
   MapPin,
   Unlock,
   Loader2,
-  AlignLeft // Added Icon for Description
+  AlignLeft
 } from 'lucide-react';
 
 // --- Firebase Setup ---
+// ใช้ Config ของจริงเพื่อให้สามารถทดสอบระบบบันทึกข้อมูลได้ทันที
 const manualConfig = {
   apiKey: "AIzaSyCLigkEyqGD0PWMTL2-K0xa5tPqyMTT8qk",
   authDomain: "lab-d-booking.firebaseapp.com",
@@ -61,7 +62,7 @@ const ROOMS = [
     id: 'big', 
     name: 'Grand Conference', 
     thName: 'ห้องประชุมใหญ่',
-    capacity: '30', 
+    capacity: '20', 
     image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80',
     color: 'bg-emerald-600', 
     icon: '🏢' 
@@ -70,7 +71,7 @@ const ROOMS = [
     id: 'small', 
     name: 'Focus Studio', 
     thName: 'ห้องประชุมเล็ก',
-    capacity: '10', 
+    capacity: '6', 
     image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=800&q=80',
     color: 'bg-teal-500', 
     icon: '💡' 
@@ -97,6 +98,12 @@ const formatDateShort = (timestamp) => {
   } else {
     return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
   }
+};
+
+// Helper to get local date string YYYY-MM-DD
+const getLocalDateStr = (date = new Date()) => {
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
 };
 
 const getStatus = (roomId, bookings) => {
@@ -259,7 +266,7 @@ export default function App() {
   const [bookingTitle, setBookingTitle] = useState('');
   const [department, setDepartment] = useState(''); 
   const [bookerName, setBookerName] = useState('');
-  const [description, setDescription] = useState(''); // NEW: Description State
+  const [description, setDescription] = useState(''); 
   
   // UI States
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -285,7 +292,11 @@ export default function App() {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        await signInAnonymously(auth);
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+           await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+           await signInAnonymously(auth);
+        }
       } catch (err) {
         console.error("Auth error:", err);
       }
@@ -337,23 +348,32 @@ export default function App() {
       setEditingBookingId(booking.id);
       const startObj = new Date(booking.start);
       const endObj = new Date(booking.end);
-      setBookingDate(startObj.toISOString().slice(0, 10));
-      setStartTime(startObj.toTimeString().slice(0, 5));
-      setEndTime(endObj.toTimeString().slice(0, 5));
+      
+      setBookingDate(getLocalDateStr(startObj));
+      setStartTime(startObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+      setEndTime(endObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+      
       setBookingTitle(booking.title);
       setDepartment(booking.owner || '');
       setBookerName(booking.ownerId || ''); 
-      setDescription(booking.description || ''); // Load Description
+      setDescription(booking.description || ''); 
       setAuthAction('edit');
     } else {
       setEditingBookingId(null);
-      setBookingDate(new Date().toISOString().slice(0, 10));
-      setStartTime('09:00');
-      setEndTime('10:00');
+      
+      // LOGIC: Set default start time = Now + 30 mins
+      const now = new Date();
+      const startObj = new Date(now.getTime() + 30 * 60000); 
+      const endObj = new Date(startObj.getTime() + 60 * 60000); // 1 hour duration
+
+      setBookingDate(getLocalDateStr(startObj));
+      setStartTime(startObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+      setEndTime(endObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+      
       setBookingTitle('');
       setDepartment('');
       setBookerName('');
-      setDescription(''); // Clear Description
+      setDescription(''); 
       setAuthAction('create');
     }
     setView('booking');
@@ -391,7 +411,7 @@ export default function App() {
       end: endTs,
       owner: department,
       ownerId: bookerName,
-      description: description // Save Description
+      description: description
     };
 
     try {
@@ -588,6 +608,8 @@ export default function App() {
                  <label className="text-xs text-emerald-400 font-bold mb-3 block uppercase tracking-widest drop-shadow-sm">Date</label>
                  <input 
                     type="date" 
+                    min={getLocalDateStr()} 
+                    onClick={(e) => e.target.showPicker && e.target.showPicker()} 
                     className="w-full bg-black/20 border border-white/10 p-4 rounded-2xl font-semibold text-white outline-none focus:bg-black/40 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all [color-scheme:dark]" 
                     value={bookingDate} 
                     onChange={(e) => setBookingDate(e.target.value)} 
@@ -596,12 +618,25 @@ export default function App() {
             <div className="flex gap-4 items-center">
                 <div className="flex-1">
                     <label className="text-xs text-emerald-400 font-bold mb-3 block uppercase tracking-widest drop-shadow-sm">Start</label>
-                    <input type="time" className="w-full bg-black/20 border border-white/10 p-4 rounded-2xl font-bold text-center text-lg outline-none focus:bg-black/40 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all text-white [color-scheme:dark]" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+                    <input 
+                        type="time" 
+                        min={bookingDate === getLocalDateStr() ? new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : undefined}
+                        onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                        className="w-full bg-black/20 border border-white/10 p-4 rounded-2xl font-bold text-center text-lg outline-none focus:bg-black/40 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all text-white [color-scheme:dark]" 
+                        value={startTime} 
+                        onChange={(e) => setStartTime(e.target.value)} 
+                    />
                 </div>
                 <ArrowRight size={20} className="text-white/20 mt-6"/>
                 <div className="flex-1">
                     <label className="text-xs text-emerald-400 font-bold mb-3 block uppercase tracking-widest drop-shadow-sm">End</label>
-                    <input type="time" className="w-full bg-black/20 border border-white/10 p-4 rounded-2xl font-bold text-center text-lg outline-none focus:bg-black/40 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all text-white [color-scheme:dark]" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+                    <input 
+                        type="time" 
+                        onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                        className="w-full bg-black/20 border border-white/10 p-4 rounded-2xl font-bold text-center text-lg outline-none focus:bg-black/40 focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/50 transition-all text-white [color-scheme:dark]" 
+                        value={endTime} 
+                        onChange={(e) => setEndTime(e.target.value)} 
+                    />
                 </div>
             </div>
         </div>
